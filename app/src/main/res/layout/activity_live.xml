@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LiveActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/pausedScene"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/background_dark"
+        app:layout_constraintBottom_toBottomOf="@+id/preview"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="wrap_content"
+            android:layout_height="100dp"
+            android:layout_weight="1"
+            app:layout_constraintBottom_toTopOf="@+id/streamingPausedText"
+            app:layout_constraintEnd_toEndOf="@+id/streamingPausedText"
+            app:layout_constraintStart_toStartOf="@+id/streamingPausedText"
+            app:srcCompat="@drawable/logo" />
+
+        <TextView
+            android:id="@+id/streamingPausedText"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:text="直播暫停，稍後回來"
+            android:textAlignment="center"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.pedro.rtplibrary.view.OpenGlView
+        android:id="@+id/preview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:numFilters="1" />
+
+    <ImageView
+        android:id="@+id/switching_camera"
+        android:layout_width="40dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        app:layout_constraintBottom_toBottomOf="@+id/left_button"
+        app:layout_constraintStart_toEndOf="@+id/left_button"
+        app:layout_constraintTop_toTopOf="@+id/left_button"
+        app:srcCompat="@drawable/cam2_u249" />
+
+    <TextView
+        android:id="@+id/speed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="0 kbps"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toTopOf="@+id/left_button"
+        app:layout_constraintEnd_toEndOf="@+id/left_button"
+        app:layout_constraintStart_toStartOf="@+id/left_button" />
+
+    <Button
+        android:id="@+id/left_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="38dp"
+        android:layout_marginTop="32dp"
+        android:background="@drawable/start_streaming"
+        android:text="開始直播"
+        android:textColor="#283593"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@+id/preview"
+        app:layout_constraintTop_toTopOf="@+id/preview" />
+
+    <Button
+        android:id="@+id/continue_streaming_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:background="@drawable/continue_streaming"
+        android:text="繼續直播"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/left_button"
+        app:layout_constraintStart_toEndOf="@+id/switching_camera"
+        app:layout_constraintTop_toTopOf="@+id/left_button" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
