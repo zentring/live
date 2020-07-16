@@ -6,42 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".LiveActivity">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/pausedScene"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@android:color/background_dark"
-        app:layout_constraintBottom_toBottomOf="@+id/preview"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:id="@+id/logo"
-            android:layout_width="wrap_content"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            app:layout_constraintBottom_toTopOf="@+id/streamingPausedText"
-            app:layout_constraintEnd_toEndOf="@+id/streamingPausedText"
-            app:layout_constraintStart_toStartOf="@+id/streamingPausedText"
-            app:srcCompat="@drawable/logo" />
-
-        <TextView
-            android:id="@+id/streamingPausedText"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="直播暫停，稍後回來"
-            android:textAlignment="center"
-            android:textColor="#FFFFFF"
-            android:textSize="36sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
     <com.pedro.rtplibrary.view.OpenGlView
         android:id="@+id/preview"
         android:layout_width="0dp"
@@ -50,7 +14,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:numFilters="1" />
+        app:numFilters="3" />
 
     <ImageView
         android:id="@+id/switching_camera"
