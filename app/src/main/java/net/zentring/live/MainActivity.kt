@@ -29,13 +29,13 @@ class MainActivity : AppCompatActivity() {
             if (!hasPermissions(this, this.permissions)) {
                 ActivityCompat.requestPermissions(this, permissions, 0)
             } else {
-                goLiveActivity()
+                goLoginActivity()
             }
         }
     }
 
-    fun goLiveActivity() {
-        val myIntent = Intent(this, LiveActivity::class.java)
+    private fun goLoginActivity() {
+        val myIntent = Intent(this, LoginActivity::class.java)
         //myIntent.putExtra("key", value) //Optional parameters
         startActivityForResult(myIntent, 0)
     }
@@ -60,11 +60,11 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, permissions, 0)
             return
         } else {
-            goLiveActivity()
+            goLoginActivity()
         }
     }
 
-    fun hasPermissions(context: Context, permissions: Array<String>): Boolean {
+    private fun hasPermissions(context: Context, permissions: Array<String>): Boolean {
         permissions.forEach {
             if (ActivityCompat.checkSelfPermission(
                     context,
