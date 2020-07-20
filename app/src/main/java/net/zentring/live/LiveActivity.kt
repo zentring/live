@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.View
@@ -79,16 +80,15 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             }
         }
 
+        var audioEffect = AudioVolume()
         volume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, value: Int, p2: Boolean) {
-                if (value == 0) {
-                    rtmpCamera1!!.disableAudio()
-                } else {
-                    rtmpCamera1!!.enableAudio()
-                }
+                audioEffect.setVolume(value)
+                rtmpCamera1!!.setCustomAudioEffect(audioEffect)
                 var xPosition =
                     (((volume.right - volume.left) / volume.max) * volume.progress)// + volume.left
                 floatingVolume.translationY = -(xPosition.toFloat() - (floatingVolume.width / 2))
+                floatingVolume.text = value.toString()
             }
 
             override fun onStartTrackingTouch(p0: SeekBar?) {
@@ -113,6 +113,9 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                         rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
                         rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
                     }
+                    rtmpCamera1!!.setCustomAudioEffect(audioEffect)
+                    volumeRealTime.progress = audioEffect.volume
+                    Log.d("VU", audioEffect.volume.toString())
                     if (isPaused) {
                         pausedText.visibility = View.VISIBLE
                     } else {
@@ -120,7 +123,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     }
                     //rtmpCamera1!!.glInterface.setFilter(filter)
                 }
-                Thread.sleep(1000)
+                Thread.sleep(100)
             }
         }).start()
         preview.setOnClickListener {
@@ -132,7 +135,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             if (!rtmpCamera1!!.isStreaming) {
                 if (rtmpCamera1!!.isRecording || rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()
                 ) {
-                    rtmpCamera1!!.startStream(data.pushurl)
+                    rtmpCamera1!!.startStream("rtmps://live-api-s.facebook.com:443/rtmp/1728839347267969?s_bl=1&s_sc=1728839363934634&s_sw=0&s_vt=api-s&a=AbzCp9ykK0WyHiOf")
+                    //rtmpCamera1!!.startStream(data.pushurl)
                     //Starting stream
                     if (data.targetrate != "null") {
                         rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate!!.toInt())
