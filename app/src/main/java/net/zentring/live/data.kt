@@ -1,7 +1,21 @@
 package net.zentring.live
 
+import android.os.Build
+import android.os.Environment
+import java.io.File
+
 class data {
     companion object {
+        var isStarted = false
+        var TEMP_PATH = File(Environment.getDataDirectory().absolutePath + "/video_buffer")
+        var STORAGE_PATH = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.getStorageDirectory()
+        } else {
+            Environment.getExternalStorageDirectory()
+        }
+        var isDebug = true
+
+
         var pushurl //推流地址
                 : String? = null
         var match //比赛ID

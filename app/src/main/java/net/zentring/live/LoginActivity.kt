@@ -1,5 +1,6 @@
 package net.zentring.live
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -14,7 +15,6 @@ import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import kotlinx.android.synthetic.main.activity_login.*
-import org.json.JSONException
 import org.json.JSONObject
 import kotlin.system.exitProcess
 
@@ -24,6 +24,17 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        if (!data.isStarted) {
+            data.isStarted = true
+        } else {
+            finish()
+            exitProcess(0)
+        }
+
+        if (data.isDebug) {
+            goLiveActivity()
+            return
+        }
 
         username.setText("123")
         password.setText("123456")
@@ -38,9 +49,9 @@ class LoginActivity : AppCompatActivity() {
         }
         var isShowPassword = false
         previewPassword.setOnClickListener {
-            if(isShowPassword){
+            if (isShowPassword) {
                 password.transformationMethod = HideReturnsTransformationMethod.getInstance()
-            }else{
+            } else {
                 password.transformationMethod = PasswordTransformationMethod.getInstance()
             }
             isShowPassword = !isShowPassword
@@ -113,9 +124,25 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        finish()
+
         finishAffinity()
         exitProcess(0)
+    }
+
+
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1) {
+            if (resultCode == Activity.RESULT_OK) {
+                Thread.sleep(100)
+                finish()
+                exitProcess(0)
+            }
+        }
     }
 
     private fun goLiveActivity() {

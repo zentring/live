@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -19,6 +21,7 @@ import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRende
 import com.pedro.rtplibrary.rtmp.RtmpCamera1
 import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
+import java.io.File
 import java.io.InputStream
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -30,12 +33,13 @@ private const val PICK_LOGO_CODE = 1024
 class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Callback {
     private var rtmpCamera1: RtmpCamera1? = null
 
+
     private var isPaused = false
-    var width = Resources.getSystem().displayMetrics.widthPixels // round
+    var width = Resources.getSystem().displayMetrics.widthPixels
     var height = Resources.getSystem().displayMetrics.heightPixels
     var logo: Bitmap? = null
     var logo2: Bitmap? = null
-    fun pickImage() {
+    private fun pickImage() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"
         startActivityForResult(intent, PICK_LOGO_CODE)
@@ -61,6 +65,28 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live)
+
+        videoList.visibility = View.INVISIBLE
+        main_control.visibility = View.VISIBLE
+        close_video_selector.setOnClickListener {
+            videoList.visibility = View.INVISIBLE
+            main_control.visibility = View.VISIBLE
+        }
+
+        val returnIntent = Intent()
+        returnIntent.putExtra("exit", true)
+        setResult(Activity.RESULT_OK, returnIntent)
+
+        if (!File(data.TEMP_PATH, "situne/live").exists()) {
+            File(data.TEMP_PATH, "situne/live").mkdirs()
+        }
+
+
+        select.setOnClickListener {
+            videoList.visibility = View.VISIBLE
+            main_control.visibility = View.INVISIBLE
+        }
+
         rtmpCamera1 = RtmpCamera1(preview, this)
         rtmpCamera1!!.setReTries(100)
 
@@ -74,16 +100,23 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             if (volume.visibility == View.VISIBLE) {
                 volume.visibility = View.INVISIBLE
                 floatingVolume.visibility = View.INVISIBLE
+                speakerToggle.background =
+                    ContextCompat.getDrawable(this, R.drawable.speaker_background_disabled)
             } else {
                 volume.visibility = View.VISIBLE
                 floatingVolume.visibility = View.VISIBLE
+
+                speakerToggle.background =
+                    ContextCompat.getDrawable(this, R.drawable.speaker_background)
+
             }
         }
+
 
         var audioEffect = AudioVolume()
         volume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, value: Int, p2: Boolean) {
-                audioEffect.setVolume(value)
+                audioEffect.volume = value
                 rtmpCamera1!!.setCustomAudioEffect(audioEffect)
                 var xPosition =
                     (((volume.right - volume.left) / volume.max) * volume.progress)// + volume.left
@@ -135,8 +168,14 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             if (!rtmpCamera1!!.isStreaming) {
                 if (rtmpCamera1!!.isRecording || rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()
                 ) {
-                    rtmpCamera1!!.startStream("rtmps://live-api-s.facebook.com:443/rtmp/1728839347267969?s_bl=1&s_sc=1728839363934634&s_sw=0&s_vt=api-s&a=AbzCp9ykK0WyHiOf")
-                    //rtmpCamera1!!.startStream(data.pushurl)
+                    if (data.isDebug) {
+                        rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
+                    } else {
+                        rtmpCamera1!!.startStream(data.pushurl)
+                    }
+                    rtmpCamera1!!.startRecord("${data.TEMP_PATH.absolutePath}/situne/live/" + System.currentTimeMillis() + ".mp4") {
+
+                    }
                     //Starting stream
                     if (data.targetrate != "null") {
                         rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate!!.toInt())
@@ -354,9 +393,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     override fun onDestroy() {
         super.onDestroy()
-        finish()
-        finishAffinity()
-        exitProcess(0)
     }
 
     private val NONE = 0 // 原始

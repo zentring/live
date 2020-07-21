@@ -14,9 +14,13 @@ const val AUDIO_REQUEST_CODE = 200
 
 class MainActivity : AppCompatActivity() {
 
-    val permissions = arrayOf(
+    private val permissionsCarema = arrayOf(
         Manifest.permission.CAMERA,
         Manifest.permission.RECORD_AUDIO
+    )
+    private val permissionsFile = arrayOf(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
 
     override fun onRequestPermissionsResult(
@@ -26,11 +30,22 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 0) {
-            if (!hasPermissions(this, this.permissions)) {
+            if (!hasPermissions(this, this.permissionsCarema)) {
                 ActivityCompat.requestPermissions(this, permissions, 0)
-            } else {
-                goLoginActivity()
             }
+
+        } else if (requestCode == 1) {
+            if (!hasPermissions(this, this.permissionsFile)) {
+                ActivityCompat.requestPermissions(this, permissions, 1)
+            }
+        }
+
+        if (hasPermissions(this, this.permissionsFile) && hasPermissions(
+                this,
+                this.permissionsCarema
+            )
+        ) {
+            goLoginActivity()
         }
     }
 
@@ -56,11 +71,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         supportActionBar?.hide()
 
-        if (!hasPermissions(this, permissions)) {
-            ActivityCompat.requestPermissions(this, permissions, 0)
+        if (!hasPermissions(this, permissionsCarema)) {
+            ActivityCompat.requestPermissions(this, permissionsCarema, 0)
             return
         } else {
-            goLoginActivity()
+            if (!hasPermissions(this, permissionsFile)) {
+                ActivityCompat.requestPermissions(this, permissionsFile, 1)
+                return
+            } else {
+                goLoginActivity()
+            }
         }
     }
 

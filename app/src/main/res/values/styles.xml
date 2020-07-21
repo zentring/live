@@ -18,6 +18,10 @@
         <item name="colorAccent">@color/light_green</item> <!-- Whatever color you want-->
     </style>
 
+    <style name="AppTheme.ProgressbarDisabled">
+        <item name="colorAccent">@android:color/darker_gray</item> <!-- Whatever color you want-->
+    </style>
+
     <style name="SeekBarStyle" parent="Widget.AppCompat.SeekBar">
         <item name="android:progressBackgroundTint">@color/white</item>
         <item name="android:progressTint">@color/white</item>
