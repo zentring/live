@@ -7,6 +7,8 @@ import java.io.File
 class data {
     companion object {
         var isStarted = false
+        var isSelectEnabled = false
+        var selectedVideoList = MutableList(0) { "" }
         var TEMP_PATH = File(Environment.getDataDirectory().absolutePath + "/video_buffer")
         var STORAGE_PATH = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.getStorageDirectory()

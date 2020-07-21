@@ -2,6 +2,7 @@ package net.zentring.live
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.*
 import android.media.MediaPlayer
@@ -19,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.Constraints
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
 import com.pedro.encoder.input.gl.render.filters.NoFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRender
@@ -67,7 +69,15 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     private class VideoClickListener : View.OnClickListener {
         override fun onClick(view: View) {
-
+            if (data.isSelectEnabled) {
+                if (view.tag.toString() in data.selectedVideoList) {
+                    data.selectedVideoList.remove(view.tag.toString())
+                    view.setBackgroundColor(Color.TRANSPARENT)
+                } else {
+                    data.selectedVideoList.add(view.tag.toString())
+                    view.setBackgroundColor(Color.LTGRAY)
+                }
+            }
         }
     }
 
@@ -89,11 +99,35 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         if (!File(data.TEMP_PATH, "situne/live").exists()) {
             File(data.TEMP_PATH, "situne/live").mkdirs()
         }
+        upload.setOnClickListener {
+            if (data.selectedVideoList.size == 0) {
+                Toast.makeText(this, "請至少選擇一部影片上傳", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "上傳功能尚未實作", Toast.LENGTH_SHORT).show()
+            }
+        }
+        multiple_select.setOnClickListener {
+            if (data.isSelectEnabled) {
+                data.isSelectEnabled = false
+                multiple_select.setTextColor(Color.WHITE)
 
+                video_files.children.forEach {
+                    it.setBackgroundColor(Color.TRANSPARENT)
+                }
+                data.selectedVideoList = MutableList(0) { "" }
+            } else {
+                data.isSelectEnabled = true
+                multiple_select.setTextColor(Color.DKGRAY)
+            }
+
+        }
 
         select.setOnClickListener {
             videoList.visibility = View.VISIBLE
             main_control.visibility = View.INVISIBLE
+            data.isSelectEnabled = false
+            data.selectedVideoList = MutableList(0) { "" }
+
             video_files.removeAllViews()
             Thread(Runnable {
                 var i = 0
