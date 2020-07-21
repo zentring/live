@@ -4,16 +4,20 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
-import android.os.Build
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.Constraints
 import androidx.core.content.ContextCompat
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
 import com.pedro.encoder.input.gl.render.filters.NoFilterRender
@@ -25,7 +29,6 @@ import java.io.File
 import java.io.InputStream
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
-import kotlin.system.exitProcess
 
 
 private const val PICK_LOGO_CODE = 1024
@@ -62,6 +65,12 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
 
+    private class VideoClickListener : View.OnClickListener {
+        override fun onClick(view: View) {
+
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live)
@@ -85,6 +94,25 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         select.setOnClickListener {
             videoList.visibility = View.VISIBLE
             main_control.visibility = View.INVISIBLE
+            video_files.removeAllViews()
+            Thread(Runnable {
+                var i = 0
+                listSiTuneFiles().forEach {
+                    if (it.isFile) {
+                        i++
+                        val mp: MediaPlayer =
+                            MediaPlayer.create(this, Uri.parse(it.absolutePath))
+                        val time: Int = mp.duration
+                        runOnUiThread {
+                            addVideoToList(it.nameWithoutExtension, (time / 1000), i)
+                        }
+                    }
+                }
+                runOnUiThread {
+                    totalText.text = "(共 $i 個)"
+                }
+
+            }).start()
         }
 
         rtmpCamera1 = RtmpCamera1(preview, this)
@@ -237,7 +265,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             if (isPaused) {
                 isPaused = false
                 continue_streaming_button.visibility = View.INVISIBLE
-
                 left_button.text = "暫停直播"
                 rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
                 rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
@@ -245,6 +272,73 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 pausedText.visibility = View.INVISIBLE
             }
         }
+    }
+
+
+    private fun addVideoToList(name: String, time: Int, i: Int) {
+
+        var frame = ConstraintLayout(this)
+
+        frame.layoutParams = LinearLayout.LayoutParams(
+            ConstraintLayout.LayoutParams.MATCH_CONSTRAINT,
+            ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+        )
+        frame.layoutParams.width = ConstraintLayout.LayoutParams.MATCH_PARENT
+        frame.layoutParams.height = 150
+        frame.setOnClickListener(VideoClickListener())
+
+        var timeText = TextView(this)
+        timeText.setTextColor(Color.GRAY)
+        timeText.text = time.toString() + "s"
+        timeText.layoutParams = Constraints.LayoutParams(
+            ConstraintLayout.LayoutParams.WRAP_CONTENT,
+            ConstraintLayout.LayoutParams.WRAP_CONTENT
+        )
+        (timeText.layoutParams as Constraints.LayoutParams).topToTop =
+            Constraints.LayoutParams.PARENT_ID
+        (timeText.layoutParams as Constraints.LayoutParams).rightToRight =
+            Constraints.LayoutParams.PARENT_ID
+        (timeText.layoutParams as Constraints.LayoutParams).topMargin = 16
+        (timeText.layoutParams as Constraints.LayoutParams).rightMargin = 16
+
+        frame.addView(timeText)
+
+        var count = TextView(this)
+        count.setTextColor(ContextCompat.getColor(this, R.color.purple))
+        count.text = i.toString().padStart(3, '0')
+        count.textSize = 12f
+        count.layoutParams = Constraints.LayoutParams(
+            ConstraintLayout.LayoutParams.WRAP_CONTENT,
+            ConstraintLayout.LayoutParams.WRAP_CONTENT
+        )
+        (count.layoutParams as Constraints.LayoutParams).topToTop =
+            Constraints.LayoutParams.PARENT_ID
+        (count.layoutParams as Constraints.LayoutParams).leftToLeft =
+            Constraints.LayoutParams.PARENT_ID
+        (count.layoutParams as Constraints.LayoutParams).topMargin = 16
+        (count.layoutParams as Constraints.LayoutParams).leftMargin = 16
+        frame.addView(count)
+
+
+        var filename = TextView(this)
+        filename.setTextColor(Color.WHITE)
+        filename.text = name
+        filename.layoutParams = Constraints.LayoutParams(
+            ConstraintLayout.LayoutParams.WRAP_CONTENT,
+            ConstraintLayout.LayoutParams.WRAP_CONTENT
+        )
+        (filename.layoutParams as Constraints.LayoutParams).topToTop =
+            Constraints.LayoutParams.PARENT_ID
+        (filename.layoutParams as Constraints.LayoutParams).leftToLeft =
+            Constraints.LayoutParams.PARENT_ID
+        (filename.layoutParams as Constraints.LayoutParams).topMargin = 72
+        (filename.layoutParams as Constraints.LayoutParams).leftMargin = 16
+        filename.textSize = 18f
+
+        frame.addView(filename)
+        frame.tag = "video_$i"
+        video_files.addView(frame)
+
     }
 
     private fun textAsBitmap(
@@ -288,6 +382,11 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
         return image
     }
+
+    private fun listSiTuneFiles(): List<File> {
+        return File(data.STORAGE_PATH, "/situne/live/").walkTopDown().toList()
+    }
+
 
     override fun surfaceChanged(surfaceHolder: SurfaceHolder, i: Int, i1: Int, i2: Int) {
 
