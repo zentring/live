@@ -2,11 +2,9 @@ package net.zentring.live
 
 import android.app.Activity
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.*
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
@@ -21,10 +19,14 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.Constraints
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
+import com.pedro.encoder.input.decoder.AudioDecoderInterface
+import com.pedro.encoder.input.decoder.VideoDecoderInterface
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
 import com.pedro.encoder.input.gl.render.filters.NoFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRender
 import com.pedro.rtplibrary.rtmp.RtmpCamera1
+import com.pedro.rtplibrary.rtmp.RtmpFromFile
+import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import java.io.File
@@ -35,8 +37,11 @@ import kotlin.math.sqrt
 
 private const val PICK_LOGO_CODE = 1024
 
-class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Callback {
+class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Callback,
+    VideoDecoderInterface, AudioDecoderInterface,
+    VideoTrimmerView.OnSelectedRangeChangedListener, View.OnClickListener {
     private var rtmpCamera1: RtmpCamera1? = null
+    private var rtmpFile: RtmpFromFile? = null
 
 
     private var isPaused = false
@@ -44,6 +49,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     var height = Resources.getSystem().displayMetrics.heightPixels
     var logo: Bitmap? = null
     var logo2: Bitmap? = null
+    var sdPreviewPlayer: MediaPlayer? = null
+    var bigPreviewLayoutParam: ConstraintLayout.LayoutParams? = null
+    var smallPreviewLayoutParam: ConstraintLayout.LayoutParams? = null
+
     private fun pickImage() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"
@@ -66,31 +75,242 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
     }
 
+    override fun onClick(view: View) {
+        if (data.isSelectEnabled) {
+            if (view.tag.toString() in data.selectedVideoList) {
+                data.selectedVideoList.remove(view.tag.toString())
+                view.setBackgroundColor(Color.TRANSPARENT)
+            } else {
+                data.selectedVideoList.add(view.tag.toString())
+                view.setBackgroundColor(Color.LTGRAY)
+            }
+        } else {
+            runOnUiThread {
+                rtmpCamera1?.stopPreview()
+                setVideoEditScreen()
+                hideMainController()
+                hideSideVideoSelector()
+                var file = File(data.STORAGE_PATH, "situne/live/${view.tag}.mp4")
+                var tmpmp4 = File(getExternalFilesDir(null), "/tmp/filetostream.mp4")
+                file.copyTo(tmpmp4, true)
 
-    private class VideoClickListener : View.OnClickListener {
-        override fun onClick(view: View) {
-            if (data.isSelectEnabled) {
-                if (view.tag.toString() in data.selectedVideoList) {
-                    data.selectedVideoList.remove(view.tag.toString())
-                    view.setBackgroundColor(Color.TRANSPARENT)
-                } else {
-                    data.selectedVideoList.add(view.tag.toString())
-                    view.setBackgroundColor(Color.LTGRAY)
+
+                Thread(Runnable {
+                    sdPreviewPlayer = MediaPlayer()
+                    sdPreviewPlayer!!.setDataSource(tmpmp4.absolutePath)
+                    sdPreviewPlayer!!.prepare()
+                    sdPreviewPlayer!!.setDisplay(sdVideoPreview.holder)
+                    sdPreviewPlayer!!.start()
+                    sdPreviewPlayer!!.pause()
+                }).start()
+
+                videoTrimmerView
+                    .setVideo(file)
+                    .setMaxDuration(600000_000)                   // millis
+                    .setMinDuration(1)                    // millis
+                    .setFrameCountInWindow(20)
+                    .setExtraDragSpace(0f)                    // pixels
+                    .setOnSelectedRangeChangedListener(this)
+                    .show()
+
+            }
+        }
+    }
+
+    private fun hideMainController() {
+        main_control.visibility = View.INVISIBLE
+    }
+
+    private fun showMainController() {
+        main_control.visibility = View.VISIBLE
+    }
+
+    fun setPreviewCameraOnSmall() {
+        rtmpCameraPreview.layoutParams = smallPreviewLayoutParam
+        rtmpFilePreviewFrame.layoutParams = bigPreviewLayoutParam
+    }
+
+    fun setPreviewCameraFull() {
+        rtmpCameraPreview.layoutParams = bigPreviewLayoutParam
+        rtmpFilePreviewFrame.layoutParams = smallPreviewLayoutParam
+    }
+
+    private fun setVideoEditScreen() {
+        //rtmpCamera1?.stopPreview()
+        rtmpFilePreviewFrame.visibility = View.VISIBLE
+        rtmpFilePreviewFrame.layoutParams = bigPreviewLayoutParam
+    }
+
+    private fun initViewLayout() {
+        bigPreviewLayoutParam = rtmpCameraPreview.layoutParams as ConstraintLayout.LayoutParams?
+        smallPreviewLayoutParam =
+            rtmpFilePreviewFrame.layoutParams as ConstraintLayout.LayoutParams?
+
+        videoList.visibility = View.INVISIBLE
+        main_control.visibility = View.VISIBLE
+        rtmpFilePreviewFrame.visibility = View.INVISIBLE
+    }
+
+    private fun initClickListener() {
+        close_video_selector.setOnClickListener {
+            hideSideVideoSelector()
+            showMainController()
+        }
+
+        upload.setOnClickListener {
+            uploadOnClick()
+        }
+
+        multiple_select.setOnClickListener {
+            multipleSelectOnClick()
+        }
+
+        select.setOnClickListener {
+            selectOnClick()
+        }
+
+        switching_camera.setOnClickListener {
+            rtmpCamera1?.switchCamera()
+        }
+
+        speakerToggle.setOnClickListener {
+            toggleVolumeBar()
+        }
+
+        continue_streaming_button.setOnClickListener {
+            continueStreamingOnClick()
+        }
+
+        playPause.setOnClickListener {
+            playPauseOnClick()
+        }
+
+        giveup.setOnClickListener {
+            sdPreviewPlayer?.release()
+            goHome()
+        }
+    }
+
+    private fun goHome() {
+        playPause.setImageResource(R.drawable.play)
+        rtmpCamera1!!.startPreview()
+        rtmpFilePreviewFrame.visibility = View.INVISIBLE
+        main_control.visibility = View.VISIBLE
+    }
+
+    var pausedTime = 0
+    private fun playPauseOnClick() {
+        if (sdPreviewPlayer!!.isPlaying) {
+            sdPreviewPlayer!!.pause()
+            pausedTime = sdPreviewPlayer!!.currentPosition
+            playPause.setImageResource(R.drawable.play)
+        } else {
+            sdPreviewPlayer!!.seekTo(pausedTime)
+            sdPreviewPlayer!!.start()
+            playPause.setImageResource(R.drawable.pause)
+        }
+    }
+
+    private fun hideSideVideoSelector() {
+        videoList.visibility = View.INVISIBLE
+    }
+
+    private fun showSideVideoSelector() {
+        videoList.visibility = View.INVISIBLE
+        showMainController()
+    }
+
+    private fun continueStreamingOnClick() {
+        if (isPaused) {
+            isPaused = false
+            continue_streaming_button.visibility = View.INVISIBLE
+            left_button.text = "暫停直播"
+            rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+            rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
+            rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
+            pausedText.visibility = View.INVISIBLE
+        }
+    }
+
+    private fun uploadOnClick() {
+        if (data.selectedVideoList.size == 0) {
+            Toast.makeText(this, "請至少選擇一部影片上傳", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "上傳功能尚未實作", Toast.LENGTH_SHORT).show()
+        }
+
+    }
+
+    private fun multipleSelectOnClick() {
+        if (data.isSelectEnabled) {
+            data.isSelectEnabled = false
+            multiple_select.setTextColor(Color.WHITE)
+
+            video_files.children.forEach {
+                it.setBackgroundColor(Color.TRANSPARENT)
+            }
+            data.selectedVideoList = MutableList(0) { "" }
+        } else {
+            data.isSelectEnabled = true
+            multiple_select.setTextColor(Color.DKGRAY)
+        }
+    }
+
+    private fun selectOnClick() {
+        videoList.visibility = View.VISIBLE
+        main_control.visibility = View.INVISIBLE
+        data.isSelectEnabled = false
+        data.selectedVideoList = MutableList(0) { "" }
+
+        video_files.removeAllViews()
+        Thread(Runnable {
+            var i = 0
+            listSiTuneFiles().forEach {
+                if (it.isFile) {
+                    i++
+                    val mp = MediaPlayer()
+                    mp.setDataSource(it.absolutePath)
+                    //MediaPlayer.create(this, Uri.parse())
+                    mp.prepare()
+                    mp.setOnPreparedListener { mediaPlayer ->
+                        val time: Int = mediaPlayer.duration
+                        runOnUiThread {
+                            addVideoToList(it.nameWithoutExtension, (time / 1000), i)
+                        }
+                        mediaPlayer.release()
+
+                    }
                 }
             }
+            runOnUiThread {
+                totalText.text = "(共 $i 個)"
+            }
+
+        }).start()
+    }
+
+    private fun toggleVolumeBar() {
+        if (volume.visibility == View.VISIBLE) {
+            volume.visibility = View.INVISIBLE
+            floatingVolume.visibility = View.INVISIBLE
+            speakerToggle.background =
+                ContextCompat.getDrawable(this, R.drawable.speaker_background_disabled)
+        } else {
+            volume.visibility = View.VISIBLE
+            floatingVolume.visibility = View.VISIBLE
+
+            speakerToggle.background =
+                ContextCompat.getDrawable(this, R.drawable.speaker_background)
+
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live)
-
-        videoList.visibility = View.INVISIBLE
-        main_control.visibility = View.VISIBLE
-        close_video_selector.setOnClickListener {
-            videoList.visibility = View.INVISIBLE
-            main_control.visibility = View.VISIBLE
-        }
+        toggleVolumeBar()
+        initViewLayout()
+        initClickListener()
 
         val returnIntent = Intent()
         returnIntent.putExtra("exit", true)
@@ -99,80 +319,14 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         if (!File(data.TEMP_PATH, "situne/live").exists()) {
             File(data.TEMP_PATH, "situne/live").mkdirs()
         }
-        upload.setOnClickListener {
-            if (data.selectedVideoList.size == 0) {
-                Toast.makeText(this, "請至少選擇一部影片上傳", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "上傳功能尚未實作", Toast.LENGTH_SHORT).show()
-            }
-        }
-        multiple_select.setOnClickListener {
-            if (data.isSelectEnabled) {
-                data.isSelectEnabled = false
-                multiple_select.setTextColor(Color.WHITE)
 
-                video_files.children.forEach {
-                    it.setBackgroundColor(Color.TRANSPARENT)
-                }
-                data.selectedVideoList = MutableList(0) { "" }
-            } else {
-                data.isSelectEnabled = true
-                multiple_select.setTextColor(Color.DKGRAY)
-            }
-
-        }
-
-        select.setOnClickListener {
-            videoList.visibility = View.VISIBLE
-            main_control.visibility = View.INVISIBLE
-            data.isSelectEnabled = false
-            data.selectedVideoList = MutableList(0) { "" }
-
-            video_files.removeAllViews()
-            Thread(Runnable {
-                var i = 0
-                listSiTuneFiles().forEach {
-                    if (it.isFile) {
-                        i++
-                        val mp: MediaPlayer =
-                            MediaPlayer.create(this, Uri.parse(it.absolutePath))
-                        val time: Int = mp.duration
-                        runOnUiThread {
-                            addVideoToList(it.nameWithoutExtension, (time / 1000), i)
-                        }
-                    }
-                }
-                runOnUiThread {
-                    totalText.text = "(共 $i 個)"
-                }
-
-            }).start()
-        }
-
-        rtmpCamera1 = RtmpCamera1(preview, this)
+        rtmpCamera1 = RtmpCamera1(rtmpCameraPreview, this)
         rtmpCamera1!!.setReTries(100)
 
+        rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
+
         floatingVolume.translationY = -50f
-        preview.holder.addCallback(this)
-
-        switching_camera.setOnClickListener {
-            rtmpCamera1?.switchCamera()
-        }
-        speakerToggle.setOnClickListener {
-            if (volume.visibility == View.VISIBLE) {
-                volume.visibility = View.INVISIBLE
-                floatingVolume.visibility = View.INVISIBLE
-                speakerToggle.background =
-                    ContextCompat.getDrawable(this, R.drawable.speaker_background_disabled)
-            } else {
-                volume.visibility = View.VISIBLE
-                floatingVolume.visibility = View.VISIBLE
-
-                speakerToggle.background =
-                    ContextCompat.getDrawable(this, R.drawable.speaker_background)
-
-            }
-        }
+        rtmpCameraPreview.holder.addCallback(this)
 
 
         var audioEffect = AudioVolume()
@@ -203,14 +357,18 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                             ContextCompat.getDrawable(this, R.drawable.start_streaming)
 
                         continue_streaming_button.visibility = View.INVISIBLE
-                        rtmpCamera1!!.stopStream()
+
                         rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
                         rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
                         rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
+
+
+                    } else {
+                        rtmpCamera1!!.setCustomAudioEffect(audioEffect)
+                        volumeRealTime.progress = audioEffect.volume
+                        Log.d("VU", audioEffect.volume.toString())
+
                     }
-                    rtmpCamera1!!.setCustomAudioEffect(audioEffect)
-                    volumeRealTime.progress = audioEffect.volume
-                    Log.d("VU", audioEffect.volume.toString())
                     if (isPaused) {
                         pausedText.visibility = View.VISIBLE
                     } else {
@@ -221,7 +379,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 Thread.sleep(100)
             }
         }).start()
-        preview.setOnClickListener {
+        rtmpCameraPreview.setOnClickListener {
             if (isPaused) {
                 pickImage()
             }
@@ -295,17 +453,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 }
             }
         }
-        continue_streaming_button.setOnClickListener {
-            if (isPaused) {
-                isPaused = false
-                continue_streaming_button.visibility = View.INVISIBLE
-                left_button.text = "暫停直播"
-                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
-                rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
-                rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
-                pausedText.visibility = View.INVISIBLE
-            }
-        }
     }
 
 
@@ -319,7 +466,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         )
         frame.layoutParams.width = ConstraintLayout.LayoutParams.MATCH_PARENT
         frame.layoutParams.height = 150
-        frame.setOnClickListener(VideoClickListener())
+        frame.setOnClickListener(this)
 
         var timeText = TextView(this)
         timeText.setTextColor(Color.GRAY)
@@ -370,7 +517,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         filename.textSize = 18f
 
         frame.addView(filename)
-        frame.tag = "video_$i"
+        //frame.tag = "video_$i"
+        frame.tag = name
         video_files.addView(frame)
 
     }
@@ -583,5 +731,33 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         return true
     }
 
+    override fun onVideoDecoderFinished() {
+        runOnUiThread {
+            if (rtmpFile!!.isStreaming) {
+                Toast.makeText(
+                    this,
+                    "Video stream finished",
+                    Toast.LENGTH_SHORT
+                ).show()
+                rtmpFile!!.stopStream()
+            }
+        }
+    }
+
+    override fun onAudioDecoderFinished() {
+
+    }
+
+    override fun onSelectRangeStart() {
+        // Start to drag range bar or start to scroll the video frame list
+    }
+
+    override fun onSelectRange(startMillis: Long, endMillis: Long) {
+        // Range is changing
+    }
+
+    override fun onSelectRangeEnd(startMillis: Long, endMillis: Long) {
+        // Range selected, play the video here
+    }
 
 }

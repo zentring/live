@@ -15,7 +15,7 @@
         tools:srcCompat="@drawable/pause" />
 
     <com.pedro.rtplibrary.view.OpenGlView
-        android:id="@+id/preview"
+        android:id="@+id/rtmpCameraPreview"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -25,6 +25,106 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0"
         app:numFilters="3" />
+
+    <com.pedro.rtplibrary.view.OpenGlView
+        android:id="@+id/rtmpFilePreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:numFilters="3" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/rtmpFilePreviewFrame"
+        android:layout_width="320dp"
+        android:layout_height="180dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <SurfaceView
+            android:id="@+id/sdVideoPreview"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toTopOf="@+id/editControllerFrame"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/editControllerFrame"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:background="#323232"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <ImageView
+                android:id="@+id/playPause"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                app:layout_constraintBottom_toBottomOf="@+id/videoTrimmerView"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/videoTrimmerView"
+                app:srcCompat="@drawable/play" />
+
+            <idv.luchafang.videotrimmer.VideoTrimmerView
+                android:id="@+id/videoTrimmerView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/giveup"
+                app:layout_constraintStart_toEndOf="@+id/playPause"
+                app:layout_constraintTop_toBottomOf="@+id/timeCursor"
+                app:vtv_window_bar_width="10dp"
+                app:vtv_window_border_color="@android:color/holo_orange_light"
+                app:vtv_window_border_width="2dp"
+                app:vtv_window_left_bar="@android:color/holo_orange_light"
+                app:vtv_window_right_bar="@android:color/holo_orange_light" />
+
+            <Button
+                android:id="@+id/giveup"
+                android:layout_width="70dp"
+                android:layout_height="30dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/giveup"
+                android:text="放棄"
+                android:textColor="@color/purple"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/save"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/save"
+                android:text="保存"
+                android:textColor="#FFFFFF"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/giveup"
+                app:layout_constraintStart_toStartOf="@+id/giveup" />
+
+            <TextView
+                android:id="@+id/timeCursor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="0s"
+                android:textColor="@android:color/holo_blue_light"
+                app:layout_constraintEnd_toEndOf="@+id/videoTrimmerView"
+                app:layout_constraintStart_toStartOf="@+id/videoTrimmerView"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <EditText
         android:id="@+id/pausedText"
@@ -44,9 +144,9 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/preview"
+        app:layout_constraintEnd_toEndOf="@+id/rtmpCameraPreview"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/preview">
+        app:layout_constraintTop_toTopOf="@+id/rtmpCameraPreview">
 
         <FrameLayout
             android:id="@+id/select"
@@ -289,11 +389,5 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/template_video"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
