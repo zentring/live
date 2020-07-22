@@ -94,11 +94,11 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 var tmpmp4 = File(getExternalFilesDir(null), "/tmp/filetostream.mp4")
                 file.copyTo(tmpmp4, true)
 
-
                 Thread(Runnable {
                     sdPreviewPlayer = MediaPlayer()
                     sdPreviewPlayer!!.setDataSource(tmpmp4.absolutePath)
                     sdPreviewPlayer!!.prepare()
+                    videoTotalTime.text = "${sdPreviewPlayer!!.duration}s"
                     sdPreviewPlayer!!.setDisplay(sdVideoPreview.holder)
                     sdPreviewPlayer!!.start()
                     sdPreviewPlayer!!.pause()
@@ -112,6 +112,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     .setExtraDragSpace(0f)                    // pixels
                     .setOnSelectedRangeChangedListener(this)
                     .show()
+
 
             }
         }
@@ -307,17 +308,20 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        data.instance = this
         setContentView(R.layout.activity_live)
         toggleVolumeBar()
         initViewLayout()
         initClickListener()
-
         val returnIntent = Intent()
         returnIntent.putExtra("exit", true)
         setResult(Activity.RESULT_OK, returnIntent)
 
-        if (!File(data.TEMP_PATH, "situne/live").exists()) {
-            File(data.TEMP_PATH, "situne/live").mkdirs()
+        if (!File(data.getTempPath(), "situne/live").exists()) {
+            File(data.getTempPath(), "situne/live").mkdirs()
+        }
+        if (!data.getTempPath().exists()) {
+            data.getTempPath().mkdirs()
         }
 
         rtmpCamera1 = RtmpCamera1(rtmpCameraPreview, this)
@@ -366,6 +370,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     } else {
                         rtmpCamera1!!.setCustomAudioEffect(audioEffect)
                         volumeRealTime.progress = audioEffect.volume
+                        volumeRealTime.max = volume.progress
                         Log.d("VU", audioEffect.volume.toString())
 
                     }
@@ -393,12 +398,17 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     } else {
                         rtmpCamera1!!.startStream(data.pushurl)
                     }
-                    rtmpCamera1!!.startRecord("${data.TEMP_PATH.absolutePath}/situne/live/" + System.currentTimeMillis() + ".mp4") {
+                    rtmpCamera1!!.startRecord("${data.getTempPath().absolutePath}/situne/live/" + System.currentTimeMillis() + ".mp4") {
 
                     }
                     //Starting stream
-                    if (data.targetrate != "null") {
-                        rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate!!.toInt())
+                    if (data.targetrate != "null" && data.targetrate != null) {
+                        if (data.targetrate?.toInt() == null) {
+                            Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
+                                .show()
+                        } else {
+                            rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate?.toInt()!!)
+                        }
                     }
                     left_button.background =
                         ContextCompat.getDrawable(this, R.drawable.pause_streaming)
@@ -517,7 +527,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         filename.textSize = 18f
 
         frame.addView(filename)
-        //frame.tag = "video_$i"
         frame.tag = name
         video_files.addView(frame)
 
@@ -674,6 +683,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     override fun onDestroy() {
         super.onDestroy()
+        finishAffinity()
     }
 
     private val NONE = 0 // 原始

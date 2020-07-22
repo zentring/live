@@ -1,15 +1,19 @@
 package net.zentring.live
 
+import android.content.Context
 import android.os.Build
 import android.os.Environment
 import java.io.File
 
 class data {
     companion object {
+        var instance: Context? = null
         var isStarted = false
         var isSelectEnabled = false
         var selectedVideoList = MutableList(0) { "" }
-        var TEMP_PATH = File(Environment.getDataDirectory().absolutePath + "/video_buffer")
+        fun getTempPath() =
+            File((instance)?.getExternalFilesDir(null)?.absolutePath + "/video_buffer")
+
         var STORAGE_PATH = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.getStorageDirectory()
         } else {

@@ -82,7 +82,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/giveup"
                 app:layout_constraintStart_toEndOf="@+id/playPause"
-                app:layout_constraintTop_toBottomOf="@+id/timeCursor"
+                app:layout_constraintTop_toBottomOf="@+id/videoTotalTime"
                 app:vtv_window_bar_width="10dp"
                 app:vtv_window_border_color="@android:color/holo_orange_light"
                 app:vtv_window_border_width="2dp"
@@ -113,7 +113,7 @@
                 app:layout_constraintStart_toStartOf="@+id/giveup" />
 
             <TextView
-                android:id="@+id/timeCursor"
+                android:id="@+id/videoTotalTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -251,7 +251,7 @@
             android:layout_height="50dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="32dp"
-            android:progress="50"
+            android:progress="0"
             android:rotation="-90"
             android:theme="@style/AppTheme.Progressbar"
             app:layout_constraintStart_toStartOf="parent"
