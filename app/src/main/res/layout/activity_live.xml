@@ -57,7 +57,7 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/editControllerFrame"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="100dp"
             android:background="#323232"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -94,6 +94,7 @@
                 android:layout_width="70dp"
                 android:layout_height="30dp"
                 android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
                 android:background="@drawable/giveup"
                 android:text="放棄"
                 android:textColor="@color/purple"
@@ -104,13 +105,13 @@
                 android:id="@+id/save"
                 android:layout_width="0dp"
                 android:layout_height="30dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/save"
                 android:text="保存"
                 android:textColor="#FFFFFF"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="@+id/giveup"
-                app:layout_constraintStart_toStartOf="@+id/giveup" />
+                app:layout_constraintStart_toStartOf="@+id/giveup"
+                app:layout_constraintTop_toBottomOf="@+id/giveup" />
 
             <TextView
                 android:id="@+id/videoTotalTime"
@@ -122,8 +123,139 @@
                 app:layout_constraintEnd_toEndOf="@+id/videoTrimmerView"
                 app:layout_constraintStart_toStartOf="@+id/videoTrimmerView"
                 app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/cutedTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="2dp"
+                android:text="0s"
+                android:textColor="#FFFFFF"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/save"
+                app:layout_constraintStart_toStartOf="@+id/save" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/saveFileDialog"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#464646"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/file_dialog_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="{{FILE NAME}}"
+            android:textColor="#FFFFFF"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <EditText
+            android:id="@+id/file_dialog_filename"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@color/white"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:padding="5dp"
+            android:text="{{NEW_FILE_NAME}}"
+            android:textColor="@color/purple"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/file_dialog_title" />
+
+        <TextView
+            android:id="@+id/file_dialog_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="結束時間：0"
+            android:textColor="@color/gray"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/file_dialog_filename" />
+
+        <Button
+            android:id="@+id/file_dialog_ok"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/save"
+            android:text="確定"
+            android:textColor="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/file_dialog_filename"
+            app:layout_constraintTop_toBottomOf="@+id/file_dialog_time"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <Button
+            android:id="@+id/file_dialog_cancle"
+            android:layout_width="100dp"
+            android:layout_height="40dp"
+            android:background="@drawable/giveup"
+            android:text="取消"
+            app:layout_constraintBottom_toBottomOf="@+id/file_dialog_ok"
+            app:layout_constraintEnd_toEndOf="@+id/file_dialog_filename"
+            app:layout_constraintTop_toTopOf="@+id/file_dialog_ok" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/dialog_overwritten"
+        android:layout_width="300dp"
+        android:layout_height="100dp"
+        android:background="#5A5A5A"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/textView10"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="是否覆蓋原視頻"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/overwritten_yes"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/save"
+            android:text="是"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Button
+            android:id="@+id/overwritten_no"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/giveup"
+            android:text="否"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <EditText
@@ -165,6 +297,7 @@
                 android:scaleX=".5"
                 android:scaleY=".5"
                 app:srcCompat="@drawable/select" />
+
         </FrameLayout>
 
         <FrameLayout

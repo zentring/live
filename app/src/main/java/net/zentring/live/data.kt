@@ -7,18 +7,29 @@ import java.io.File
 
 class data {
     companion object {
+        var currentCutVideoName = ""
+        var currentCutVideoStart: Long = 0
+        var currentCutVideoEnd: Long = 0
+
         var instance: Context? = null
         var isStarted = false
         var isSelectEnabled = false
         var selectedVideoList = MutableList(0) { "" }
         fun getTempPath() =
-            File((instance)?.getExternalFilesDir(null)?.absolutePath + "/video_buffer")
+            File((instance)?.getExternalFilesDir(null)!!.absolutePath)
 
-        var STORAGE_PATH = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.getStorageDirectory()
-        } else {
-            Environment.getExternalStorageDirectory()
+        fun getStoragePath(): File = run {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.getStorageDirectory()
+            } else {
+                Environment.getExternalStorageDirectory()
+            }
         }
+
+        fun getSiTunePath(): File {
+            return File(getStoragePath(), "/situne/live")
+        }
+
         var isDebug = true
 
 
@@ -38,6 +49,5 @@ class data {
                 : String? = null
         var initrate //推流初始化码率
                 : String? = null
-
     }
 }

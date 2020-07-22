@@ -19,6 +19,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.Constraints
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
+import com.daasuu.mp4compose.composer.Mp4Composer
 import com.pedro.encoder.input.decoder.AudioDecoderInterface
 import com.pedro.encoder.input.decoder.VideoDecoderInterface
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
@@ -31,6 +32,7 @@ import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import java.io.File
 import java.io.InputStream
+import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -39,7 +41,7 @@ private const val PICK_LOGO_CODE = 1024
 
 class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Callback,
     VideoDecoderInterface, AudioDecoderInterface,
-    VideoTrimmerView.OnSelectedRangeChangedListener, View.OnClickListener {
+    VideoTrimmerView.OnSelectedRangeChangedListener, View.OnClickListener, Mp4Composer.Listener {
     private var rtmpCamera1: RtmpCamera1? = null
     private var rtmpFile: RtmpFromFile? = null
 
@@ -75,6 +77,35 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
     }
 
+    private fun cutVideoToTempPath(source: String, target: String, start: Long, end: Long) {
+        Mp4Composer(
+            source,
+            target
+        ).trim(start, end).listener(this).start()
+    }
+
+    override fun onProgress(progress: Double) {
+        Log.d("", "onProgress = $progress")
+    }
+
+    override fun onCanceled() {
+
+    }
+
+    override fun onCompleted() {
+        runOnUiThread {
+            Toast.makeText(this, "剪輯完成檔案", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onFailed(exception: Exception?) {
+        Log.e("MP4", "onFailed()", exception)
+
+        runOnUiThread {
+            Toast.makeText(this, "裁切檔案失敗", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onClick(view: View) {
         if (data.isSelectEnabled) {
             if (view.tag.toString() in data.selectedVideoList) {
@@ -90,32 +121,50 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 setVideoEditScreen()
                 hideMainController()
                 hideSideVideoSelector()
-                var file = File(data.STORAGE_PATH, "situne/live/${view.tag}.mp4")
-                var tmpmp4 = File(getExternalFilesDir(null), "/tmp/filetostream.mp4")
+                var file = File(data.getSiTunePath(), "${view.tag}.mp4")
+                var tmpmp4 = File(getExternalFilesDir(null), "/tmp/filetocut.mp4")
                 file.copyTo(tmpmp4, true)
 
                 Thread(Runnable {
                     sdPreviewPlayer = MediaPlayer()
                     sdPreviewPlayer!!.setDataSource(tmpmp4.absolutePath)
                     sdPreviewPlayer!!.prepare()
-                    videoTotalTime.text = "${sdPreviewPlayer!!.duration}s"
+                    var dr = round(sdPreviewPlayer!!.duration / 100.0) / 10.0
+                    runOnUiThread {
+                        videoTotalTime.text = dr.toString() + "s"
+                        cutedTime.text = videoTotalTime.text
+                    }
                     sdPreviewPlayer!!.setDisplay(sdVideoPreview.holder)
                     sdPreviewPlayer!!.start()
                     sdPreviewPlayer!!.pause()
                 }).start()
-
+                data.currentCutVideoName = view.tag.toString()
                 videoTrimmerView
                     .setVideo(file)
-                    .setMaxDuration(600000_000)                   // millis
-                    .setMinDuration(1)                    // millis
-                    .setFrameCountInWindow(20)
-                    .setExtraDragSpace(0f)                    // pixels
+                    .setMaxDuration(600000_000)             // millis
+                    .setMinDuration(100)                    // millis
+                    .setFrameCountInWindow(12)
+                    .setExtraDragSpace(40f)                 // pixels
                     .setOnSelectedRangeChangedListener(this)
                     .show()
 
-
             }
         }
+    }
+
+    override fun onSelectRangeStart() {
+        // Start to drag range bar or start to scroll the video frame list
+    }
+
+    override fun onSelectRange(startMillis: Long, endMillis: Long) {
+        // Range is changing
+        data.currentCutVideoStart = startMillis
+        data.currentCutVideoEnd = endMillis
+        cutedTime.text = (round((endMillis - startMillis) / 100.0) / 10.0).toString() + "s"
+    }
+
+    override fun onSelectRangeEnd(startMillis: Long, endMillis: Long) {
+        // Range selected, play the video here
     }
 
     private fun hideMainController() {
@@ -150,6 +199,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         videoList.visibility = View.INVISIBLE
         main_control.visibility = View.VISIBLE
         rtmpFilePreviewFrame.visibility = View.INVISIBLE
+        saveFileDialog.visibility = View.INVISIBLE
+
     }
 
     private fun initClickListener() {
@@ -190,6 +241,178 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             sdPreviewPlayer?.release()
             goHome()
         }
+
+        left_button.setOnClickListener {
+            leftButtonOnClick()
+        }
+
+        save.setOnClickListener {
+            saveEditedVideo()
+        }
+
+        file_dialog_ok.setOnClickListener {
+            processSaveCutedFile()
+        }
+
+        file_dialog_cancle.setOnClickListener {
+            hideSaveFileDialog()
+        }
+
+        overwritten_yes.setOnClickListener {
+            overwrittenYES()
+        }
+
+        overwritten_no.setOnClickListener {
+            overwrittenNO()
+        }
+    }
+
+    private fun processSaveCutedFile() {
+        var title = file_dialog_title.text.toString()
+        var target = file_dialog_filename.text.toString()
+        if (target == "") {
+            Toast.makeText(this, "請填寫檔案名稱", Toast.LENGTH_SHORT).show()
+        }
+        hideSaveFileDialog()
+        if (File(data.getSiTunePath(), "$target.mp4").exists()) {
+            showOverwritten()
+        } else {
+            cutVideoToTempPath(
+                File(data.getSiTunePath(), "$title.mp4").absolutePath,
+                File(data.getSiTunePath(), "$target.mp4").absolutePath,
+                data.currentCutVideoStart,
+                data.currentCutVideoEnd
+            )
+            Toast.makeText(this, "正在裁減檔案", Toast.LENGTH_SHORT).show()
+            goHome()
+        }
+    }
+
+    private fun overwrittenNO() {
+        hideOverwritten()
+        showSaveFileDialog(file_dialog_title.text.toString(), true)
+    }
+
+    private fun overwrittenYES() {
+        var title = file_dialog_title.text.toString()
+        var target = file_dialog_filename.text.toString()
+
+        var fileTmp = File(data.getTempPath(), "/video_overwritten.mp4")
+        File(data.getSiTunePath(), "$title.mp4").copyTo(fileTmp)
+        cutVideoToTempPath(
+            fileTmp.absolutePath,
+            File(data.getSiTunePath(), "$target.mp4").absolutePath,
+            data.currentCutVideoStart,
+            data.currentCutVideoEnd
+        )
+        Toast.makeText(this, "正在裁減檔案", Toast.LENGTH_SHORT).show()
+        hideOverwritten()
+        goHome()
+    }
+
+    private fun showOverwritten() {
+        dialog_overwritten.visibility = View.VISIBLE
+    }
+
+    private fun hideOverwritten() {
+        dialog_overwritten.visibility = View.INVISIBLE
+    }
+
+    private fun saveEditedVideo() {
+        showSaveFileDialog(data.currentCutVideoName, false)
+        file_dialog_filename.setText(data.currentCutVideoName)
+        //cutVideoToTempPath("" + "",)
+    }
+
+    private fun showSaveFileDialog(filename: String, cancel: Boolean) {
+        saveFileDialog.visibility = View.VISIBLE
+        if (!cancel) {
+            file_dialog_filename.setText("")
+        }
+        file_dialog_title.text = filename
+        file_dialog_time.text = "結束時間："
+    }
+
+    private fun hideSaveFileDialog() {
+        saveFileDialog.visibility = View.INVISIBLE
+    }
+
+    private fun leftButtonOnClick() {
+        if (!rtmpCamera1!!.isStreaming) {
+            if (rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()) {
+                if (data.isDebug) {
+                    rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
+                } else {
+                    rtmpCamera1!!.startStream(data.pushurl)
+                }
+                rtmpCamera1!!.startRecord("${data.getTempPath().absolutePath}/situne/live/" + System.currentTimeMillis() + ".mp4") {
+
+                }
+                //Starting stream
+                if (data.targetrate != "null" && data.targetrate != null) {
+                    if (data.targetrate?.toInt() == null) {
+                        Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate?.toInt()!!)
+                    }
+                }
+                left_button.background =
+                    ContextCompat.getDrawable(this, R.drawable.pause_streaming)
+                left_button.text = "暫停直播"
+                left_button.setTextColor(ContextCompat.getColor(this, R.color.white))
+            }
+        } else {
+            if (isPaused) {
+                isPaused = false
+                left_button.text = "開始直播"
+                left_button.setTextColor(ContextCompat.getColor(this, R.color.purple))
+                left_button.background =
+                    ContextCompat.getDrawable(this, R.drawable.start_streaming)
+
+                continue_streaming_button.visibility = View.INVISIBLE
+                rtmpCamera1!!.stopStream()
+                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
+                pausedText.visibility = View.INVISIBLE
+            } else {
+
+                continue_streaming_button.visibility = View.VISIBLE
+                left_button.text = "停止直播"
+                pausedText.visibility = View.VISIBLE
+                setPauseFilter()
+                isPaused = true
+            }
+        }
+    }
+
+    private fun setPauseFilter() {
+
+        rtmpCamera1!!.glInterface.setFilter(BlackFilterRender())
+        var tf = ImageObjectFilterRender()
+        tf.setImage(textAsBitmap(pausedText.text.toString(), 90f))
+
+        rtmpCamera1!!.glInterface.setFilter(1, tf)
+
+        var logo = ImageObjectFilterRender()
+        if (this.logo == null) {
+            logo.setImage(BitmapFactory.decodeResource(resources, R.drawable.pause))
+        } else {
+            if (this.logo!!.isRecycled) {
+                this.logo = this.logo2!!.copy(this.logo2!!.config, true)
+
+                //logo.setImage(BitmapFactory.decodeResource(resources, R.drawable.pause))
+            } else {
+            }
+            logo.setImage(this.logo)
+        }
+        //Max is 20f
+        logo.setPosition((20f - ((400f / width) * 20)) / 2, 2f)
+
+        //logo.setPosition(0f, 0f)
+        logo.setScale((400f / width) * 100, (400f / height) * 100)
+        rtmpCamera1!!.glInterface.setFilter(2, logo)
     }
 
     private fun goHome() {
@@ -268,17 +491,20 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             var i = 0
             listSiTuneFiles().forEach {
                 if (it.isFile) {
-                    i++
-                    val mp = MediaPlayer()
-                    mp.setDataSource(it.absolutePath)
-                    //MediaPlayer.create(this, Uri.parse())
-                    mp.prepare()
-                    mp.setOnPreparedListener { mediaPlayer ->
-                        val time: Int = mediaPlayer.duration
-                        runOnUiThread {
-                            addVideoToList(it.nameWithoutExtension, (time / 1000), i)
+                    try {
+                        val mp = MediaPlayer()
+                        mp.setDataSource(it.absolutePath)
+                        i++
+                        mp.prepare()
+                        mp.setOnPreparedListener { mediaPlayer ->
+                            val time: Int = mediaPlayer.duration
+                            runOnUiThread {
+                                addVideoToList(it.nameWithoutExtension, (time / 1000), i)
+                            }
+                            mediaPlayer.release()
+
                         }
-                        mediaPlayer.release()
+                    } catch (e: Exception) {
 
                     }
                 }
@@ -306,32 +532,38 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        data.instance = this
-        setContentView(R.layout.activity_live)
-        toggleVolumeBar()
-        initViewLayout()
-        initClickListener()
-        val returnIntent = Intent()
-        returnIntent.putExtra("exit", true)
-        setResult(Activity.RESULT_OK, returnIntent)
-
-        if (!File(data.getTempPath(), "situne/live").exists()) {
-            File(data.getTempPath(), "situne/live").mkdirs()
-        }
-        if (!data.getTempPath().exists()) {
-            data.getTempPath().mkdirs()
-        }
-
+    private fun initRTMPComponent() {
         rtmpCamera1 = RtmpCamera1(rtmpCameraPreview, this)
         rtmpCamera1!!.setReTries(100)
 
         rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
 
-        floatingVolume.translationY = -50f
         rtmpCameraPreview.holder.addCallback(this)
+    }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        data.instance = this
+        setContentView(R.layout.activity_live)
+
+        toggleVolumeBar()
+        initViewLayout()
+        initClickListener()
+
+        val returnIntent = Intent()
+        returnIntent.putExtra("exit", true)
+        setResult(Activity.RESULT_OK, returnIntent)
+
+        if (!File(data.getStoragePath(), "situne/live").exists()) {
+            File(data.getStoragePath(), "situne/live").mkdirs()
+        }
+        if (!data.getTempPath().exists()) {
+            data.getTempPath().mkdirs()
+        }
+
+        floatingVolume.translationY = -50f
+
+        initRTMPComponent()
 
         var audioEffect = AudioVolume()
         volume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -371,8 +603,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                         rtmpCamera1!!.setCustomAudioEffect(audioEffect)
                         volumeRealTime.progress = audioEffect.volume
                         volumeRealTime.max = volume.progress
-                        Log.d("VU", audioEffect.volume.toString())
-
+                        //Log.d("VU", audioEffect.volume.toString())
                     }
                     if (isPaused) {
                         pausedText.visibility = View.VISIBLE
@@ -387,80 +618,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCameraPreview.setOnClickListener {
             if (isPaused) {
                 pickImage()
-            }
-        }
-        left_button.setOnClickListener {
-            if (!rtmpCamera1!!.isStreaming) {
-                if (rtmpCamera1!!.isRecording || rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()
-                ) {
-                    if (data.isDebug) {
-                        rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
-                    } else {
-                        rtmpCamera1!!.startStream(data.pushurl)
-                    }
-                    rtmpCamera1!!.startRecord("${data.getTempPath().absolutePath}/situne/live/" + System.currentTimeMillis() + ".mp4") {
-
-                    }
-                    //Starting stream
-                    if (data.targetrate != "null" && data.targetrate != null) {
-                        if (data.targetrate?.toInt() == null) {
-                            Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
-                                .show()
-                        } else {
-                            rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate?.toInt()!!)
-                        }
-                    }
-                    left_button.background =
-                        ContextCompat.getDrawable(this, R.drawable.pause_streaming)
-                    left_button.text = "暫停直播"
-                    left_button.setTextColor(ContextCompat.getColor(this, R.color.white))
-                }
-            } else {
-                if (isPaused) {
-                    isPaused = false
-                    left_button.text = "開始直播"
-                    left_button.setTextColor(ContextCompat.getColor(this, R.color.purple))
-                    left_button.background =
-                        ContextCompat.getDrawable(this, R.drawable.start_streaming)
-
-                    continue_streaming_button.visibility = View.INVISIBLE
-                    rtmpCamera1!!.stopStream()
-                    rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
-                    rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
-                    rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
-                    pausedText.visibility = View.INVISIBLE
-                } else {
-
-                    continue_streaming_button.visibility = View.VISIBLE
-                    left_button.text = "停止直播"
-                    pausedText.visibility = View.VISIBLE
-
-                    rtmpCamera1!!.glInterface.setFilter(BlackFilterRender())
-                    var tf = ImageObjectFilterRender()
-                    tf.setImage(textAsBitmap(pausedText.text.toString(), 90f))
-
-                    rtmpCamera1!!.glInterface.setFilter(1, tf)
-
-                    var logo = ImageObjectFilterRender()
-                    if (this.logo == null) {
-                        logo.setImage(BitmapFactory.decodeResource(resources, R.drawable.pause))
-                    } else {
-                        if (this.logo!!.isRecycled) {
-                            this.logo = this.logo2!!.copy(this.logo2!!.config, true)
-
-                            //logo.setImage(BitmapFactory.decodeResource(resources, R.drawable.pause))
-                        } else {
-                        }
-                        logo.setImage(this.logo)
-                    }
-                    //Max is 20f
-                    logo.setPosition((20f - ((400f / width) * 20)) / 2, 2f)
-
-                    //logo.setPosition(0f, 0f)
-                    logo.setScale((400f / width) * 100, (400f / height) * 100)
-                    rtmpCamera1!!.glInterface.setFilter(2, logo)
-                    isPaused = true
-                }
             }
         }
     }
@@ -575,7 +732,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     private fun listSiTuneFiles(): List<File> {
-        return File(data.STORAGE_PATH, "/situne/live/").walkTopDown().toList()
+        return (data.getSiTunePath()).walkTopDown().toList()
     }
 
 
@@ -664,6 +821,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         runOnUiThread {
             speed.text = "0 kbps"
             speed.setTextColor(Color.WHITE)
+            volumeRealTime.progress = 0
             Toast.makeText(this, "已中斷連線", Toast.LENGTH_SHORT).show()
         }
     }
@@ -683,6 +841,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     override fun onDestroy() {
         super.onDestroy()
+        this.releaseInstance()
         finishAffinity()
     }
 
@@ -756,18 +915,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     override fun onAudioDecoderFinished() {
 
-    }
-
-    override fun onSelectRangeStart() {
-        // Start to drag range bar or start to scroll the video frame list
-    }
-
-    override fun onSelectRange(startMillis: Long, endMillis: Long) {
-        // Range is changing
-    }
-
-    override fun onSelectRangeEnd(startMillis: Long, endMillis: Long) {
-        // Range selected, play the video here
     }
 
 }
