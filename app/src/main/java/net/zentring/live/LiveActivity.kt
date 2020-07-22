@@ -41,7 +41,8 @@ private const val PICK_LOGO_CODE = 1024
 
 class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Callback,
     VideoDecoderInterface, AudioDecoderInterface,
-    VideoTrimmerView.OnSelectedRangeChangedListener, View.OnClickListener, Mp4Composer.Listener {
+    VideoTrimmerView.OnSelectedRangeChangedListener, View.OnClickListener, Mp4Composer.Listener,
+    View.OnTouchListener {
     private var rtmpCamera1: RtmpCamera1? = null
     private var rtmpFile: RtmpFromFile? = null
 
@@ -201,6 +202,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpFilePreviewFrame.visibility = View.INVISIBLE
         saveFileDialog.visibility = View.INVISIBLE
 
+
+        //rtmpCameraPreview.holder.addCallback(this)
+        rtmpCameraPreview.setOnTouchListener(this)
+
     }
 
     private fun initClickListener() {
@@ -345,7 +350,12 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 } else {
                     rtmpCamera1!!.startStream(data.pushurl)
                 }
-                rtmpCamera1!!.startRecord("${data.getTempPath().absolutePath}/situne/live/" + System.currentTimeMillis() + ".mp4") {
+                var recordPath =
+                    File(data.getTempPath(), "viturl_buffer")
+                if (!recordPath.exists()) {
+                    recordPath.mkdirs()
+                }
+                rtmpCamera1!!.startRecord(recordPath.absolutePath + "/" + System.currentTimeMillis() + ".mp4") {
 
                 }
                 //Starting stream
@@ -539,6 +549,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
 
         rtmpCameraPreview.holder.addCallback(this)
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -621,7 +632,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             }
         }
     }
-
 
     private fun addVideoToList(name: String, time: Int, i: Int) {
 
@@ -734,7 +744,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     private fun listSiTuneFiles(): List<File> {
         return (data.getSiTunePath()).walkTopDown().toList()
     }
-
 
     override fun surfaceChanged(surfaceHolder: SurfaceHolder, i: Int, i1: Int, i2: Int) {
 
@@ -863,7 +872,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         return sqrt(x * x + y * y)
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
+    private fun _onTouchEvent(event: MotionEvent?): Boolean {
+        //Log.d("Test", "obTouch")
 
         when (event!!.action and MotionEvent.ACTION_MASK) {
             MotionEvent.ACTION_DOWN -> {
@@ -884,6 +894,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 if (mStatus == DRAG) {
                     //dragAction(event)
                 } else {
+                    //Log.d("Test", "setZoom")
                     if (event.pointerCount == 1) {
                         return true
                     }
@@ -914,6 +925,11 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     override fun onAudioDecoderFinished() {
+
+    }
+
+    override fun onTouch(p0: View?, p1: MotionEvent?): Boolean {
+        return _onTouchEvent(p1)
 
     }
 
