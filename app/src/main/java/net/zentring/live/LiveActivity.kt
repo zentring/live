@@ -7,6 +7,7 @@ import android.graphics.*
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.View
@@ -176,34 +177,42 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         main_control.visibility = View.VISIBLE
     }
 
-    fun setPreviewCameraOnSmall() {
-        rtmpCameraPreview.layoutParams = smallPreviewLayoutParam
-        rtmpFilePreviewFrame.layoutParams = bigPreviewLayoutParam
-    }
-
-    fun setPreviewCameraFull() {
-        rtmpCameraPreview.layoutParams = bigPreviewLayoutParam
-        rtmpFilePreviewFrame.layoutParams = smallPreviewLayoutParam
-    }
-
     private fun setVideoEditScreen() {
         //rtmpCamera1?.stopPreview()
-        rtmpFilePreviewFrame.visibility = View.VISIBLE
-        rtmpFilePreviewFrame.layoutParams = bigPreviewLayoutParam
+        sdVideoPreview.visibility = View.VISIBLE
+        editControllerFrame.visibility = View.VISIBLE
+    }
+
+    private fun dpToPx(dp: Float): Int {
+
+        val r = resources
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp,
+            r.displayMetrics
+        ).toInt()
+
     }
 
     private fun initViewLayout() {
         bigPreviewLayoutParam = rtmpCameraPreview.layoutParams as ConstraintLayout.LayoutParams?
-        smallPreviewLayoutParam =
-            rtmpFilePreviewFrame.layoutParams as ConstraintLayout.LayoutParams?
+        smallPreviewLayoutParam = ConstraintLayout.LayoutParams(
+            dpToPx(160f), dpToPx(90f)
+        )
+
+        (smallPreviewLayoutParam as ConstraintLayout.LayoutParams).endToEnd =
+            Constraints.LayoutParams.PARENT_ID
+        (smallPreviewLayoutParam as ConstraintLayout.LayoutParams).topToTop =
+            Constraints.LayoutParams.PARENT_ID
+        (smallPreviewLayoutParam as ConstraintLayout.LayoutParams).topMargin = dpToPx(16f)
+        (smallPreviewLayoutParam as ConstraintLayout.LayoutParams).marginEnd = dpToPx(16f)
 
         videoList.visibility = View.INVISIBLE
         main_control.visibility = View.VISIBLE
-        rtmpFilePreviewFrame.visibility = View.INVISIBLE
+        sdVideoPreview.visibility = View.INVISIBLE
+        editControllerFrame.visibility = View.INVISIBLE
         saveFileDialog.visibility = View.INVISIBLE
 
-
-        //rtmpCameraPreview.holder.addCallback(this)
         rtmpCameraPreview.setOnTouchListener(this)
 
     }
@@ -223,7 +232,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
 
         select.setOnClickListener {
-            selectOnClick()
+            openSideVideos()
         }
 
         switching_camera.setOnClickListener {
@@ -243,7 +252,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
 
         giveup.setOnClickListener {
-            sdPreviewPlayer?.release()
+            //sdPreviewPlayer?.release()
             goHome()
         }
 
@@ -270,6 +279,18 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         overwritten_no.setOnClickListener {
             overwrittenNO()
         }
+
+        cut.setOnClickListener {
+            //Toast.makeText(this, "vgyhy", Toast.LENGTH_SHORT).show()
+            switchToBufferEdit()
+        }
+    }
+
+    private fun switchToBufferEdit() {
+        rtmpCameraPreview.layoutParams = smallPreviewLayoutParam
+        sdVideoPreview.visibility = View.VISIBLE
+        editControllerFrame.visibility = View.VISIBLE
+        editControllerFrame.bringToFront()
     }
 
     private fun processSaveCutedFile() {
@@ -428,8 +449,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     private fun goHome() {
         playPause.setImageResource(R.drawable.play)
         rtmpCamera1!!.startPreview()
-        rtmpFilePreviewFrame.visibility = View.INVISIBLE
         main_control.visibility = View.VISIBLE
+        rtmpCameraPreview.layoutParams = bigPreviewLayoutParam
+        sdVideoPreview.visibility = View.INVISIBLE
+        editControllerFrame.visibility = View.INVISIBLE
     }
 
     var pausedTime = 0
@@ -490,9 +513,13 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         }
     }
 
-    private fun selectOnClick() {
+    private fun openSideVideos() {
+        goHome()
         videoList.visibility = View.VISIBLE
         main_control.visibility = View.INVISIBLE
+        //editControllerFrame.visibility = View.INVISIBLE
+        //sdVideoPreview.visibility = View.INVISIBLE
+
         data.isSelectEnabled = false
         data.selectedVideoList = MutableList(0) { "" }
 

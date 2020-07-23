@@ -30,7 +30,7 @@ class data {
             return File(getStoragePath(), "/situne/live")
         }
 
-        var isDebug = true
+        var isDebug = false
 
 
         var pushurl //推流地址
