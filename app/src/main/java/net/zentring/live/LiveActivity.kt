@@ -291,6 +291,9 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         sdVideoPreview.visibility = View.VISIBLE
         editControllerFrame.visibility = View.VISIBLE
         editControllerFrame.bringToFront()
+
+        PGM.visibility = View.VISIBLE
+        PGM.bringToFront()
     }
 
     private fun processSaveCutedFile() {
@@ -453,6 +456,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCameraPreview.layoutParams = bigPreviewLayoutParam
         sdVideoPreview.visibility = View.INVISIBLE
         editControllerFrame.visibility = View.INVISIBLE
+        PGM.visibility = View.INVISIBLE
     }
 
     var pausedTime = 0
@@ -517,8 +521,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         goHome()
         videoList.visibility = View.VISIBLE
         main_control.visibility = View.INVISIBLE
-        //editControllerFrame.visibility = View.INVISIBLE
-        //sdVideoPreview.visibility = View.INVISIBLE
 
         data.isSelectEnabled = false
         data.selectedVideoList = MutableList(0) { "" }
