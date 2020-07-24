@@ -181,6 +181,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         //rtmpCamera1?.stopPreview()
         sdVideoPreview.visibility = View.VISIBLE
         editControllerFrame.visibility = View.VISIBLE
+        goLiveButton.visibility = View.VISIBLE
     }
 
     private fun dpToPx(dp: Float): Int {
@@ -212,6 +213,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         sdVideoPreview.visibility = View.INVISIBLE
         editControllerFrame.visibility = View.INVISIBLE
         saveFileDialog.visibility = View.INVISIBLE
+        goLiveButton.visibility = View.INVISIBLE
+        returnToLive.visibility = View.INVISIBLE
 
         rtmpCameraPreview.setOnTouchListener(this)
 
@@ -283,6 +286,53 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         cut.setOnClickListener {
             //Toast.makeText(this, "vgyhy", Toast.LENGTH_SHORT).show()
             switchToBufferEdit()
+        }
+
+        goLiveButton.setOnClickListener {
+            fileToLive()
+        }
+        returnToLive.setOnClickListener {
+            returnToLive()
+        }
+    }
+
+    private fun returnToLive() {
+        if (rtmpFile!!.isStreaming) {
+            rtmpFile!!.stopStream()
+        }
+        rtmpCamera1!!.startPreview()
+        rtmpFilePreview.visibility = View.INVISIBLE
+        rtmpCameraPreview.visibility = View.VISIBLE
+        returnToLive.visibility = View.INVISIBLE
+    }
+
+    private fun fileToLive() {
+        var file = File(data.getSiTunePath(), data.currentCutVideoName + ".mp4")
+        if (rtmpFile!!.isStreaming) {
+            rtmpFile!!.stopStream()
+        }
+        if (rtmpFile!!.prepareAudio(file.absolutePath) && rtmpFile!!.prepareVideo(file.absolutePath)) {
+
+            rtmpFile!!.startStream(data.pushurl)
+            editControllerFrame.visibility = View.INVISIBLE
+            main_control.visibility = View.VISIBLE
+            returnToLive.visibility = View.VISIBLE
+            goLiveButton.visibility = View.INVISIBLE
+            sdVideoPreview.visibility = View.INVISIBLE
+
+            Thread {
+                Thread.sleep(50)
+                while (rtmpFile!!.isStreaming) {
+                    runOnUiThread {
+                        returnToLive.text =
+                            "切回直播\n" + (round(-(rtmpFile!!.videoTime - rtmpFile!!.videoDuration) * 10) / 10.0) + "s"
+                    }
+                    Thread.sleep(100)
+                }
+            }.start()
+
+        } else {
+            Toast.makeText(this, "無法初始化播放器", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -457,6 +507,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         sdVideoPreview.visibility = View.INVISIBLE
         editControllerFrame.visibility = View.INVISIBLE
         PGM.visibility = View.INVISIBLE
+        goLiveButton.visibility = View.INVISIBLE
+        returnToLive.visibility = View.INVISIBLE
     }
 
     var pausedTime = 0
@@ -861,6 +913,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             speed.setTextColor(Color.WHITE)
             volumeRealTime.progress = 0
             Toast.makeText(this, "已中斷連線", Toast.LENGTH_SHORT).show()
+
+
+
+
         }
     }
 
@@ -943,12 +999,18 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     override fun onVideoDecoderFinished() {
         runOnUiThread {
             if (rtmpFile!!.isStreaming) {
-                Toast.makeText(
-                    this,
-                    "Video stream finished",
-                    Toast.LENGTH_SHORT
-                ).show()
+//                Toast.makeText(
+//                    this,
+//                    "Video stream finished",
+//                    Toast.LENGTH_SHORT
+//                ).show()
                 rtmpFile!!.stopStream()
+
+
+                rtmpFilePreview.visibility = View.INVISIBLE
+                returnToLive.visibility = View.INVISIBLE
+                rtmpCameraPreview.visibility = View.VISIBLE
+                rtmpCamera1!!.startPreview()
             }
         }
     }

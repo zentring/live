@@ -57,6 +57,30 @@
         tools:layout_editor_absoluteX="615dp"
         tools:layout_editor_absoluteY="32dp" />
 
+    <Button
+        android:id="@+id/goLiveButton"
+        android:layout_width="70dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/giveup"
+        android:text="播放"
+        android:textColor="@color/purple"
+        app:layout_constraintBottom_toBottomOf="@+id/sdVideoPreview"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/returnToLive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/login_button"
+        android:text="切回直播\n10s"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/editControllerFrame"
         android:layout_width="match_parent"
@@ -92,7 +116,9 @@
             app:vtv_window_border_color="@android:color/holo_orange_light"
             app:vtv_window_border_width="2dp"
             app:vtv_window_left_bar="@android:color/holo_orange_light"
-            app:vtv_window_right_bar="@android:color/holo_orange_light" />
+            app:vtv_window_right_bar="@android:color/holo_orange_light">
+
+        </idv.luchafang.videotrimmer.VideoTrimmerView>
 
         <Button
             android:id="@+id/giveup"
@@ -139,6 +165,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@+id/save"
             app:layout_constraintStart_toStartOf="@+id/save" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
