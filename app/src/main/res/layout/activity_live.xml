@@ -15,6 +15,26 @@
         tools:srcCompat="@drawable/pause" />
 
     <com.pedro.rtplibrary.view.OpenGlView
+        android:id="@+id/rtmpFilePreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:numFilters="3" />
+
+    <SurfaceView
+        android:id="@+id/sdVideoPreview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="64dp"
+        app:layout_constraintBottom_toTopOf="@id/editControllerFrame"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.pedro.rtplibrary.view.OpenGlView
         android:id="@+id/rtmpCameraPreview"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -35,27 +55,6 @@
         android:textColor="#FF0000"
         app:layout_constraintEnd_toEndOf="@id/rtmpCameraPreview"
         app:layout_constraintTop_toTopOf="@id/rtmpCameraPreview" />
-
-    <com.pedro.rtplibrary.view.OpenGlView
-        android:id="@+id/rtmpFilePreview"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:numFilters="3" />
-
-    <SurfaceView
-        android:id="@+id/sdVideoPreview"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/editControllerFrame"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="615dp"
-        tools:layout_editor_absoluteY="32dp" />
 
     <Button
         android:id="@+id/goLiveButton"

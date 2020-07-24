@@ -33,6 +33,8 @@ import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import java.io.File
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -46,7 +48,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     View.OnTouchListener {
     private var rtmpCamera1: RtmpCamera1? = null
     private var rtmpFile: RtmpFromFile? = null
-
 
     private var isPaused = false
     var width = Resources.getSystem().displayMetrics.widthPixels
@@ -95,8 +96,53 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     override fun onCompleted() {
-        runOnUiThread {
-            Toast.makeText(this, "剪輯完成檔案", Toast.LENGTH_SHORT).show()
+        if (data.isCutFromBuffer) {
+            data.isCutFromBuffer = false
+            data.isInCutPage = true
+
+
+            var tmpFile = File(data.getTempPath(), "tmp.mp4")
+            var tmpFile2 = File(data.getTempPath(), "tmp2.mp4")
+            tmpFile.copyTo(tmpFile2, true)
+
+            Thread {
+
+                sdPreviewPlayer = MediaPlayer()
+                sdPreviewPlayer!!.setDataSource(tmpFile2.absolutePath)
+                sdPreviewPlayer!!.prepare()
+                sdPreviewPlayer!!.setDisplay(sdVideoPreview.holder)
+                var d = sdPreviewPlayer!!.duration
+                sdPreviewPlayer!!.start()
+                sdPreviewPlayer!!.pause()
+
+
+                runOnUiThread {
+                    data.currentCutVideoStart = 0
+                    data.currentCutVideoEnd = d.toLong()
+                    videoTotalTime.text = (round(d / 100.0) / 10.0).toString() + "s"
+                    cutedTime.text = (round(d / 100.0) / 10.0).toString() + "s"
+                }
+            }.start()
+
+            runOnUiThread {
+                videoTrimmerView
+                    .setVideo(tmpFile)
+                    .setMaxDuration(120000)             // millis
+                    .setMinDuration(100)                    // millis
+                    .setFrameCountInWindow(12)
+                    .setExtraDragSpace(40f)                 // pixels
+                    .setOnSelectedRangeChangedListener(this)
+                    .show()
+                sdVideoPreview.visibility = View.VISIBLE
+
+//                if (rtmpFile!!.prepareAudio(tmpFile.absolutePath) && rtmpFile!!.prepareVideo(tmpFile.absolutePath)) {
+//
+//                }
+            }
+        } else {
+            runOnUiThread {
+                Toast.makeText(this, "剪輯完成檔案", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -214,6 +260,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         editControllerFrame.visibility = View.INVISIBLE
         saveFileDialog.visibility = View.INVISIBLE
         goLiveButton.visibility = View.INVISIBLE
+        PGM.visibility = View.INVISIBLE
         returnToLive.visibility = View.INVISIBLE
 
         rtmpCameraPreview.setOnTouchListener(this)
@@ -291,6 +338,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         goLiveButton.setOnClickListener {
             fileToLive()
         }
+
         returnToLive.setOnClickListener {
             returnToLive()
         }
@@ -308,42 +356,118 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     private fun fileToLive() {
         var file = File(data.getSiTunePath(), data.currentCutVideoName + ".mp4")
+        var fileCut = File(data.getTempPath(), "tmp.mp4")
         if (rtmpFile!!.isStreaming) {
             rtmpFile!!.stopStream()
         }
-        if (rtmpFile!!.prepareAudio(file.absolutePath) && rtmpFile!!.prepareVideo(file.absolutePath)) {
+        if (data.isInCutPage) {
+            if (rtmpFile!!.prepareAudio(fileCut.absolutePath) && rtmpFile!!.prepareVideo(fileCut.absolutePath)) {
+                rtmpFile!!.startStream(data.pushurl)
+                editControllerFrame.visibility = View.INVISIBLE
+                main_control.visibility = View.VISIBLE
+                returnToLive.visibility = View.VISIBLE
+                goLiveButton.visibility = View.INVISIBLE
+                sdVideoPreview.visibility = View.INVISIBLE
 
-            rtmpFile!!.startStream(data.pushurl)
-            editControllerFrame.visibility = View.INVISIBLE
-            main_control.visibility = View.VISIBLE
-            returnToLive.visibility = View.VISIBLE
-            goLiveButton.visibility = View.INVISIBLE
-            sdVideoPreview.visibility = View.INVISIBLE
-
-            Thread {
-                Thread.sleep(50)
-                while (rtmpFile!!.isStreaming) {
-                    runOnUiThread {
-                        returnToLive.text =
-                            "切回直播\n" + (round(-(rtmpFile!!.videoTime - rtmpFile!!.videoDuration) * 10) / 10.0) + "s"
+                Thread {
+                    Thread.sleep(50)
+                    while (rtmpFile!!.isStreaming) {
+                        runOnUiThread {
+                            returnToLive.text =
+                                "切回直播\n" + (round(-(rtmpFile!!.videoTime - rtmpFile!!.videoDuration) * 10) / 10.0) + "s"
+                        }
+                        Thread.sleep(100)
                     }
-                    Thread.sleep(100)
-                }
-            }.start()
+                }.start()
 
+            } else {
+                Toast.makeText(this, "無法初始化播放器", Toast.LENGTH_SHORT).show()
+            }
         } else {
-            Toast.makeText(this, "無法初始化播放器", Toast.LENGTH_SHORT).show()
+            if (rtmpFile!!.prepareAudio(file.absolutePath) && rtmpFile!!.prepareVideo(file.absolutePath)) {
+
+                rtmpFile!!.startStream(data.pushurl)
+                editControllerFrame.visibility = View.INVISIBLE
+                main_control.visibility = View.VISIBLE
+                returnToLive.visibility = View.VISIBLE
+                goLiveButton.visibility = View.INVISIBLE
+                sdVideoPreview.visibility = View.INVISIBLE
+
+                Thread {
+                    Thread.sleep(50)
+                    while (rtmpFile!!.isStreaming) {
+                        runOnUiThread {
+                            returnToLive.text =
+                                "切回直播\n" + (round(-(rtmpFile!!.videoTime - rtmpFile!!.videoDuration) * 10) / 10.0) + "s"
+                        }
+                        Thread.sleep(100)
+                    }
+                }.start()
+
+            } else {
+                Toast.makeText(this, "無法初始化播放器", Toast.LENGTH_SHORT).show()
+            }
         }
+
     }
 
     private fun switchToBufferEdit() {
+        if (!rtmpCamera1!!.isStreaming) {
+            Toast.makeText(this, "直播後才有畫面可剪輯", Toast.LENGTH_SHORT).show()
+            return
+        }
         rtmpCameraPreview.layoutParams = smallPreviewLayoutParam
         sdVideoPreview.visibility = View.VISIBLE
         editControllerFrame.visibility = View.VISIBLE
         editControllerFrame.bringToFront()
 
         PGM.visibility = View.VISIBLE
+        //rtmpCameraPreview.bringToFront()
         PGM.bringToFront()
+
+        var bufferFiles = data.getBufferVideoPath()
+
+        if (bufferFiles.exists()) {
+
+            rtmpCamera1!!.stopRecord()
+            rtmpCamera1!!.stopStream()
+
+            //rtmpCamera1?.stopPreview()
+            setVideoEditScreen()
+            hideMainController()
+            hideSideVideoSelector()
+            var file = data.getBufferVideoPath()
+            var tmpMP4 = File(data.getTempPath(), "/tmp.mp4")
+
+
+            try {
+                val mp = MediaPlayer()
+                mp.setDataSource(file.absolutePath)
+                mp.prepare()
+                mp.setOnPreparedListener { mediaPlayer ->
+                    val time: Int = mediaPlayer.duration
+                    mediaPlayer.release()
+
+                    data.isCutFromBuffer = true
+                    if (time < 120000) {
+                        Mp4Composer(
+                            file.absolutePath,
+                            tmpMP4.absolutePath
+                        ).trim(0, time.toLong()).listener(this).start()
+                    } else {
+                        Mp4Composer(
+                            file.absolutePath,
+                            tmpMP4.absolutePath
+                        ).trim((time - 120000).toLong(), time.toLong()).listener(this).start()
+                    }
+                }
+            } catch (e: Exception) {
+
+            }
+
+        } else {
+            Toast.makeText(this, "無資源可剪輯", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun processSaveCutedFile() {
@@ -356,12 +480,28 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         if (File(data.getSiTunePath(), "$target.mp4").exists()) {
             showOverwritten()
         } else {
-            cutVideoToTempPath(
-                File(data.getSiTunePath(), "$title.mp4").absolutePath,
-                File(data.getSiTunePath(), "$target.mp4").absolutePath,
-                data.currentCutVideoStart,
-                data.currentCutVideoEnd
-            )
+            if (data.isInCutPage) {
+                data.isInCutPage = false
+                cutVideoToTempPath(
+                    File(data.getTempPath(), "tmp.mp4").absolutePath,
+                    File(data.getSiTunePath(), "$target.mp4").absolutePath,
+                    data.currentCutVideoStart,
+                    data.currentCutVideoEnd
+                )
+//                File(data.getTempPath(), "tmp.mp4").copyTo(
+//                    File(
+//                        data.getSiTunePath(),
+//                        "$target.mp4"
+//                    ), true
+//                )
+            } else {
+                cutVideoToTempPath(
+                    File(data.getSiTunePath(), "$title.mp4").absolutePath,
+                    File(data.getSiTunePath(), "$target.mp4").absolutePath,
+                    data.currentCutVideoStart,
+                    data.currentCutVideoEnd
+                )
+            }
             Toast.makeText(this, "正在裁減檔案", Toast.LENGTH_SHORT).show()
             goHome()
         }
@@ -398,9 +538,13 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     private fun saveEditedVideo() {
-        showSaveFileDialog(data.currentCutVideoName, false)
-        file_dialog_filename.setText(data.currentCutVideoName)
-        //cutVideoToTempPath("" + "",)
+        if (data.isInCutPage) {
+            showSaveFileDialog("", false)
+            file_dialog_filename.setText("")
+        } else {
+            showSaveFileDialog(data.currentCutVideoName, false)
+            file_dialog_filename.setText(data.currentCutVideoName)
+        }
     }
 
     private fun showSaveFileDialog(filename: String, cancel: Boolean) {
@@ -409,7 +553,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             file_dialog_filename.setText("")
         }
         file_dialog_title.text = filename
-        file_dialog_time.text = "結束時間："
+
+        val sdf = SimpleDateFormat("hh:mm:ss")
+        val currentDate = sdf.format(Date())
+        file_dialog_time.text = "結束時間：$currentDate"
     }
 
     private fun hideSaveFileDialog() {
@@ -424,12 +571,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 } else {
                     rtmpCamera1!!.startStream(data.pushurl)
                 }
-                var recordPath =
-                    File(data.getTempPath(), "viturl_buffer")
-                if (!recordPath.exists()) {
-                    recordPath.mkdirs()
-                }
-                rtmpCamera1!!.startRecord(recordPath.absolutePath + "/" + System.currentTimeMillis() + ".mp4") {
+
+                rtmpCamera1!!.startRecord(data.getBufferVideoPath().absolutePath) {
 
                 }
                 //Starting stream
@@ -509,6 +652,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         PGM.visibility = View.INVISIBLE
         goLiveButton.visibility = View.INVISIBLE
         returnToLive.visibility = View.INVISIBLE
+
+        rtmpCameraPreview.bringToFront()
+        PGM.bringToFront()
+
     }
 
     var pausedTime = 0
@@ -626,6 +773,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     private fun initRTMPComponent() {
         rtmpCamera1 = RtmpCamera1(rtmpCameraPreview, this)
         rtmpCamera1!!.setReTries(100)
+
 
         rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
 
@@ -827,7 +975,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     override fun surfaceChanged(surfaceHolder: SurfaceHolder, i: Int, i1: Int, i2: Int) {
-
     }
 
     override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
@@ -835,7 +982,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             if (rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()) {
                 rtmpCamera1!!.stopPreview()
                 rtmpCamera1!!.startPreview()
-
             }
         }
     }
@@ -913,8 +1059,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             speed.setTextColor(Color.WHITE)
             volumeRealTime.progress = 0
             Toast.makeText(this, "已中斷連線", Toast.LENGTH_SHORT).show()
-
-
 
 
         }
@@ -1010,6 +1154,9 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 rtmpFilePreview.visibility = View.INVISIBLE
                 returnToLive.visibility = View.INVISIBLE
                 rtmpCameraPreview.visibility = View.VISIBLE
+
+                rtmpCameraPreview.layoutParams = bigPreviewLayoutParam
+                PGM.visibility = View.INVISIBLE
                 rtmpCamera1!!.startPreview()
             }
         }

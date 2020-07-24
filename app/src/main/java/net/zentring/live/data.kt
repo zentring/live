@@ -11,6 +11,9 @@ class data {
         var currentCutVideoStart: Long = 0
         var currentCutVideoEnd: Long = 0
 
+        var isCutFromBuffer = false
+        var isInCutPage = false
+
         var instance: Context? = null
         var isStarted = false
         var isSelectEnabled = false
@@ -28,6 +31,14 @@ class data {
 
         fun getSiTunePath(): File {
             return File(getStoragePath(), "/situne/live")
+        }
+
+        fun getRecordPath(): File {
+            return File(getTempPath(), "viturl_buffer")
+        }
+
+        fun getBufferVideoPath(): File {
+            return File(getTempPath(), "/buffer.mp4")
         }
 
         var isDebug = false
