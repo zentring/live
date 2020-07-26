@@ -1049,7 +1049,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     override fun onConnectionSuccessRtmp() {
         runOnUiThread {
-            Toast.makeText(this, "串流中", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, "串流中", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -1058,8 +1058,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             speed.text = "0 kbps"
             speed.setTextColor(Color.WHITE)
             if (rtmpCamera1!!.reTry(5000, reason)) {
-                Toast.makeText(this, "連線丟失，重新連線", Toast.LENGTH_SHORT)
-                    .show()
+                //Toast.makeText(this, "連線丟失，重新連線", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(
                     this, "連線失敗\n $reason", Toast.LENGTH_SHORT
