@@ -118,12 +118,17 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 sdPreviewPlayer!!.start()
                 sdPreviewPlayer!!.pause()
 
-
                 runOnUiThread {
                     data.currentCutVideoStart = 0
                     data.currentCutVideoEnd = d.toLong()
                     videoTotalTime.text = (round(d / 100.0) / 10.0).toString() + "s"
                     cutedTime.text = (round(d / 100.0) / 10.0).toString() + "s"
+                    root.removeView(rtmpCameraPreview)
+                    root.addView(rtmpCameraPreview)
+                    rtmpCameraPreview.requestLayout()
+                    rtmpCameraPreview.invalidate()
+                    rtmpCameraPreview.bringToFront()
+                    PGM.bringToFront()
                 }
             }.start()
 
@@ -228,6 +233,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         sdVideoPreview.visibility = View.VISIBLE
         editControllerFrame.visibility = View.VISIBLE
         goLiveButton.visibility = View.VISIBLE
+        editControllerFrame.bringToFront()
+        //goLiveButton.bringToFront()
     }
 
     private fun dpToPx(dp: Float): Int {
@@ -430,7 +437,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         if (bufferFiles.exists()) {
 
             rtmpCamera1!!.stopRecord()
-            rtmpCamera1!!.stopStream()
+            //rtmpCamera1!!.stopStream()
 
             //rtmpCamera1?.stopPreview()
             setVideoEditScreen()
@@ -655,6 +662,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         rtmpCameraPreview.bringToFront()
         PGM.bringToFront()
+        main_control.bringToFront()
 
     }
 
@@ -1003,6 +1011,17 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 rtmpCamera1!!.startPreview()
             }
         }
+
+        if (data.isInCutPage) {
+            if (rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()) {
+                rtmpCamera1!!.startStream(data.pushurl)
+
+                left_button.background =
+                    ContextCompat.getDrawable(this, R.drawable.pause_streaming)
+                left_button.text = "暫停直播"
+                left_button.setTextColor(ContextCompat.getColor(this, R.color.white))
+            }
+        }
     }
 
     override fun surfaceDestroyed(surfaceHolder: SurfaceHolder) {
@@ -1076,8 +1095,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             speed.text = "0 kbps"
             speed.setTextColor(Color.WHITE)
             volumeRealTime.progress = 0
-            Toast.makeText(this, "已中斷連線", Toast.LENGTH_SHORT).show()
-
+            //Toast.makeText(this, "已中斷連線", Toast.LENGTH_SHORT).show()
 
         }
     }
