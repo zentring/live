@@ -32,20 +32,21 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == 0) {
             if (!hasPermissions(this, this.permissionsCarema)) {
                 ActivityCompat.requestPermissions(this, permissions, 0)
+            } else {
+                if (!hasPermissions(this, this.permissionsFile)) {
+                    recreate()
+                    //ActivityCompat.requestPermissions(this, permissions, 1)
+                } else {
+                    goLoginActivity()
+                }
             }
 
         } else if (requestCode == 1) {
             if (!hasPermissions(this, this.permissionsFile)) {
                 ActivityCompat.requestPermissions(this, permissions, 1)
+            } else {
+                goLoginActivity()
             }
-        }
-
-        if (hasPermissions(this, this.permissionsFile) && hasPermissions(
-                this,
-                this.permissionsCarema
-            )
-        ) {
-            goLoginActivity()
         }
     }
 
