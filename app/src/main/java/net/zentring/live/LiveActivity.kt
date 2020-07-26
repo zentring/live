@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
+import android.media.MediaCodec
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
@@ -33,6 +35,7 @@ import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import java.io.File
 import java.io.InputStream
+import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.round
@@ -135,13 +138,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     .show()
                 sdVideoPreview.visibility = View.VISIBLE
 
-//                if (rtmpFile!!.prepareAudio(tmpFile.absolutePath) && rtmpFile!!.prepareVideo(tmpFile.absolutePath)) {
-//
-//                }
             }
         } else {
             runOnUiThread {
-                Toast.makeText(this, "剪輯完成檔案", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "剪輯完成", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -719,7 +719,9 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     private fun openSideVideos() {
         goHome()
         videoList.visibility = View.VISIBLE
+        videoList.bringToFront()
         main_control.visibility = View.INVISIBLE
+        main_control.bringToFront()
 
         data.isSelectEnabled = false
         data.selectedVideoList = MutableList(0) { "" }
@@ -732,15 +734,24 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     try {
                         val mp = MediaPlayer()
                         mp.setDataSource(it.absolutePath)
-                        i++
                         mp.prepare()
                         mp.setOnPreparedListener { mediaPlayer ->
+                            i++
                             val time: Int = mediaPlayer.duration
                             runOnUiThread {
                                 addVideoToList(it.nameWithoutExtension, (time / 1000), i)
                             }
                             mediaPlayer.release()
 
+                        }
+                        mp.setOnErrorListener { mediaPlayer, what, extra ->
+                            i++
+                            runOnUiThread {
+                                addVideoToList(it.nameWithoutExtension, -1, i)
+                            }
+                            mediaPlayer.release()
+
+                            false
                         }
                     } catch (e: Exception) {
 
@@ -774,10 +785,14 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCamera1 = RtmpCamera1(rtmpCameraPreview, this)
         rtmpCamera1!!.setReTries(100)
 
-
         rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
 
         rtmpCameraPreview.holder.addCallback(this)
+
+
+//        var info = MediaCodec.BufferInfo()
+//        var buffer = ByteBuffer.allocate(100)
+//        rtmpCamera1!!.getVideoData(buffer, info)
 
     }
 
@@ -876,7 +891,11 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         var timeText = TextView(this)
         timeText.setTextColor(Color.GRAY)
-        timeText.text = time.toString() + "s"
+        if (time < 0) {
+            timeText.text = "NaN"
+        } else {
+            timeText.text = time.toString() + "s"
+        }
         timeText.layoutParams = Constraints.LayoutParams(
             ConstraintLayout.LayoutParams.WRAP_CONTENT,
             ConstraintLayout.LayoutParams.WRAP_CONTENT
