@@ -1,6 +1,7 @@
 package net.zentring.live
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.util.AttributeSet
 import android.view.View
 import android.widget.AdapterView
@@ -8,6 +9,7 @@ import android.widget.ArrayAdapter
 import androidx.constraintlayout.widget.ConstraintLayout
 import kotlinx.android.synthetic.main.activity_live.*
 import kotlinx.android.synthetic.main.activity_setting.view.*
+import java.io.File
 
 class SettingView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -36,6 +38,24 @@ class SettingView @JvmOverloads constructor(
             visibility = View.INVISIBLE
             (LiveActivity.getInstance() as LiveActivity).settingBtn.visibility = View.VISIBLE
         }
+
+        pause_image_preview.setOnClickListener {
+            (LiveActivity.getInstance() as LiveActivity).pickImage()
+        }
+        val imgFile = File(data.getTempPath(), "pause.image")
+
+        if (imgFile.exists()) {
+            val myBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+            pause_image_preview.setImageBitmap(myBitmap)
+        } else {
+            pause_image_preview.setImageResource(R.drawable.pause)
+        }
+    }
+
+    fun previewPauseImage() {
+        var f = File(data.getTempPath(), "pause.image")
+        var bmp = BitmapFactory.decodeFile(f.absolutePath)
+        pause_image_preview.setImageBitmap(bmp)
     }
 
     fun setSettingResolutions() {

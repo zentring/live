@@ -17,6 +17,39 @@
         tools:layout_editor_absoluteY="217dp"
         tools:srcCompat="@drawable/pause" />
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/pauseScene"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/pauseImage"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:minWidth="100dp"
+            app:layout_constraintBottom_toTopOf="@id/pauseText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/pauseText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="直播暫停，稍後回來！"
+            android:textColor="@android:color/white"
+            android:textSize="30sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <com.pedro.rtplibrary.view.OpenGlView
         android:id="@+id/rtmpFilePreview"
         android:layout_width="0dp"

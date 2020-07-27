@@ -22,21 +22,23 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.Constraints
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
-import androidx.core.view.isInvisible
+import androidx.core.widget.addTextChangedListener
 import com.daasuu.mp4compose.composer.Mp4Composer
 import com.pedro.encoder.input.decoder.AudioDecoderInterface
 import com.pedro.encoder.input.decoder.VideoDecoderInterface
+import com.pedro.encoder.input.gl.render.filters.AndroidViewFilterRender
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
 import com.pedro.encoder.input.gl.render.filters.NoFilterRender
-import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRender
 import com.pedro.encoder.input.video.CameraHelper
 import com.pedro.rtplibrary.rtmp.RtmpCamera1
 import com.pedro.rtplibrary.rtmp.RtmpFromFile
 import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_live.*
+import kotlinx.android.synthetic.main.activity_setting.view.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import net.zentring.live.data.Companion.instance
 import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.*
@@ -63,7 +65,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     var bigPreviewLayoutParam: ConstraintLayout.LayoutParams? = null
     var smallPreviewLayoutParam: ConstraintLayout.LayoutParams? = null
 
-    private fun pickImage() {
+    fun pickImage() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"
         startActivityForResult(intent, PICK_LOGO_CODE)
@@ -78,9 +80,22 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             }
             val inputStream: InputStream =
                 this.contentResolver.openInputStream(data.data!!)!!
-            logo = BitmapFactory.decodeStream(inputStream)
 
-            this.logo2 = this.logo!!.copy(this.logo!!.config, true)
+            inputStream.use {
+                val file = File(net.zentring.live.data.getTempPath(), "pause.image")
+                FileOutputStream(file).use { output ->
+                    val buffer =
+                        ByteArray(4 * 1024) // or other buffer size
+                    var read: Int
+                    while (inputStream.read(buffer).also { read = it } != -1) {
+                        output.write(buffer, 0, read)
+                    }
+                    output.flush()
+                }
+            }
+
+            setting.previewPauseImage()
+            //this.logo2 = this.logo!!.copy(this.logo!!.config, true)
             //Now you can do whatever you want with your inpustream, save it as file, upload to a server, decode a bitmap...
         }
     }
@@ -276,7 +291,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     }
 
-    private fun initClickListener() {
+    private fun initComponentListener() {
         close_video_selector.setOnClickListener {
             hideSideVideoSelector()
             showMainController()
@@ -356,6 +371,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             setting.visibility = View.VISIBLE
             setting.bringToFront()
             settingBtn.visibility = View.INVISIBLE
+        }
+
+        pausedText.addTextChangedListener {
+            pauseText.text = it
         }
     }
 
@@ -598,11 +617,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             ) {
 
                 rtmpCamera1!!.stopPreview()
-//                Toast.makeText(
-//                    this,
-//                    "" + data.resolution[0] + "x" + data.resolution[1],
-//                    Toast.LENGTH_SHORT
-//                ).show()
 
                 rtmpCamera1!!.startPreview(data.resolution[0], data.resolution[1])
                 if (data.isDebug) {
@@ -656,29 +670,20 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     private fun setPauseFilter() {
 
         rtmpCamera1!!.glInterface.setFilter(BlackFilterRender())
-        var tf = ImageObjectFilterRender()
-        tf.setImage(textAsBitmap(pausedText.text.toString(), 90f))
 
-        rtmpCamera1!!.glInterface.setFilter(1, tf)
+        val imgFile = File(data.getTempPath(), "pause.image")
 
-        var logo = ImageObjectFilterRender()
-        if (this.logo == null) {
-            logo.setImage(BitmapFactory.decodeResource(resources, R.drawable.pause))
+        if (imgFile.exists()) {
+            val myBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+            pauseImage.setImageBitmap(myBitmap)
         } else {
-            if (this.logo!!.isRecycled) {
-                this.logo = this.logo2!!.copy(this.logo2!!.config, true)
-
-                //logo.setImage(BitmapFactory.decodeResource(resources, R.drawable.pause))
-            } else {
-            }
-            logo.setImage(this.logo)
+            pauseImage.setImageResource(R.drawable.pause)
         }
-        //Max is 20f
-        logo.setPosition((20f - ((400f / width) * 20)) / 2, 2f)
 
-        //logo.setPosition(0f, 0f)
-        logo.setScale((400f / width) * 100, (400f / height) * 100)
-        rtmpCamera1!!.glInterface.setFilter(2, logo)
+        var vf = AndroidViewFilterRender()
+
+        vf.view = pauseScene
+        rtmpCamera1!!.glInterface.setFilter(vf)
     }
 
     private fun goHome() {
@@ -871,7 +876,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         toggleVolumeBar()
         initViewLayout()
-        initClickListener()
+        initComponentListener()
 
         val returnIntent = Intent()
         returnIntent.putExtra("exit", true)
