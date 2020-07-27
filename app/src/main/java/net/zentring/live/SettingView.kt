@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.constraintlayout.widget.ConstraintLayout
+import kotlinx.android.synthetic.main.activity_live.view.*
 import kotlinx.android.synthetic.main.activity_setting.view.*
 
 class SettingView @JvmOverloads constructor(
@@ -23,6 +24,7 @@ class SettingView @JvmOverloads constructor(
                 id: Long
             ) {
                 data.resolution = data.resolutions[position]
+                (LiveActivity.getInstance() as LiveActivity).setCameraScale(data.resolution[0].toDouble() / data.resolution[1])
             }
 
             override fun onNothingSelected(parentView: AdapterView<*>?) {
@@ -35,7 +37,7 @@ class SettingView @JvmOverloads constructor(
         }
     }
 
-    fun setResolutions() {
+    fun setSettingResolutions() {
         val arrayOfResolution = MutableList(0) { "" }
         data.resolutions.forEach {
             arrayOfResolution.add("" + it[0] + "x" + it[1])
@@ -47,5 +49,8 @@ class SettingView @JvmOverloads constructor(
 
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_view)
         resolutions.adapter = spinnerArrayAdapter
+        if (arrayOfResolution.indexOf("1920x1080") != -1) {
+            resolutions.setSelection(arrayOfResolution.indexOf("1920x1080"))
+        }
     }
 }

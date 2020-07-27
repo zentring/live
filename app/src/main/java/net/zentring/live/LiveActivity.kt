@@ -1,6 +1,7 @@
 package net.zentring.live
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
@@ -11,6 +12,7 @@ import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -32,6 +34,7 @@ import com.pedro.rtplibrary.rtmp.RtmpFromFile
 import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
+import net.zentring.live.data.Companion.instance
 import java.io.File
 import java.io.InputStream
 import java.text.SimpleDateFormat
@@ -577,14 +580,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             val rotation = CameraHelper.getCameraOrientation(this)
 
             if (rtmpCamera1!!.prepareAudio() &&
-//                rtmpCamera1!!.prepareVideo(
-//                    resolution[0],
-//                    resolution[1],
-//                    30,
-//                    12000 * 1024,
-//                    false,
-//                    rotation
-//                )
                 rtmpCamera1!!.prepareVideo(
                     data.resolution[0],
                     data.resolution[1],
@@ -594,6 +589,15 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     rotation
                 )
             ) {
+
+                rtmpCamera1!!.stopPreview()
+//                Toast.makeText(
+//                    this,
+//                    "" + data.resolution[0] + "x" + data.resolution[1],
+//                    Toast.LENGTH_SHORT
+//                ).show()
+
+                rtmpCamera1!!.startPreview(data.resolution[0], data.resolution[1])
                 if (data.isDebug) {
                     rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
                 } else {
@@ -606,8 +610,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 //Starting stream
                 if (data.targetrate != "null" && data.targetrate != null) {
                     if (data.targetrate?.toInt() == null) {
-                        Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
-                            .show()
+//                        Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
+//                            .show()
                     } else {
                         rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate?.toInt()!!)
                     }
@@ -815,31 +819,42 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCamera1!!.setReTries(100)
 
         rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
-
         rtmpCameraPreview.holder.addCallback(this)
 
         var resolutions = rtmpCamera1!!.resolutionsBack
-
         resolutions.forEach {
             data.resolutions.add(arrayOf(it.width, it.height))
             println("" + it.width + " " + it.height)
         }
-        setting.setResolutions()
+        setting.setSettingResolutions()
         resolutions.sortBy { it.width }
         var resolution =
             arrayOf(
                 resolutions[resolutions.size - 2].width,
                 resolutions[resolutions.size - 2].height
             )
-
         println(resolution[0])
         println(resolution[1])
 
+        rtmpCameraPreview.viewTreeObserver.addOnGlobalLayoutListener(object :
+            ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                rtmpCameraPreview.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                var r = data.resolution[0].toDouble() / data.resolution[1].toDouble()
+                setCameraScale(r)
+            }
+        })
+        setDefaultPreviewSize()
+    }
 
-//        var info = MediaCodec.BufferInfo()
-//        var buffer = ByteBuffer.allocate(100)
-//        rtmpCamera1!!.getVideoData(buffer, info)
+    fun setDefaultPreviewSize() {
+        val r = 1920.0 / 1080
+        data.resolution = arrayOf(1920, 1080)
+        setCameraScale(r)
+    }
 
+    fun setCameraScale(r: Double) {
+        rtmpCameraPreview.layoutParams.width = (rtmpCameraPreview.height * r).toInt()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -1046,7 +1061,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         if (!rtmpCamera1!!.isStreaming) {
             if (rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()) {
                 rtmpCamera1!!.stopPreview()
-                rtmpCamera1!!.startPreview()
+                rtmpCamera1!!.startPreview(data.resolution[0], data.resolution[1])
+                setCameraScale(data.resolution[0].toDouble() / data.resolution[1])
             }
         }
 
@@ -1240,9 +1256,15 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     }
 
-    override fun onTouch(p0: View?, p1: MotionEvent?): Boolean {
-        return _onTouchEvent(p1)
+    override fun onTouch(v: View?, me: MotionEvent?): Boolean {
+        return _onTouchEvent(me)
 
+    }
+
+    companion object {
+        fun getInstance(): Context? {
+            return instance
+        }
     }
 
 }
