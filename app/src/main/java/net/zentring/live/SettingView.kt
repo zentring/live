@@ -6,7 +6,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.constraintlayout.widget.ConstraintLayout
-import kotlinx.android.synthetic.main.activity_live.view.*
+import kotlinx.android.synthetic.main.activity_live.*
 import kotlinx.android.synthetic.main.activity_setting.view.*
 
 class SettingView @JvmOverloads constructor(
@@ -34,6 +34,7 @@ class SettingView @JvmOverloads constructor(
 
         back.setOnClickListener {
             visibility = View.INVISIBLE
+            (LiveActivity.getInstance() as LiveActivity).settingBtn.visibility = View.VISIBLE
         }
     }
 

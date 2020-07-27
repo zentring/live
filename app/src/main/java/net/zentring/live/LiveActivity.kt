@@ -22,6 +22,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.Constraints
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
+import androidx.core.view.isInvisible
 import com.daasuu.mp4compose.composer.Mp4Composer
 import com.pedro.encoder.input.decoder.AudioDecoderInterface
 import com.pedro.encoder.input.decoder.VideoDecoderInterface
@@ -353,6 +354,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         settingBtn.setOnClickListener {
             setting.visibility = View.VISIBLE
+            setting.bringToFront()
+            settingBtn.visibility = View.INVISIBLE
         }
     }
 
@@ -404,7 +407,11 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 returnToLive.visibility = View.VISIBLE
                 goLiveButton.visibility = View.INVISIBLE
                 sdVideoPreview.visibility = View.INVISIBLE
+                rtmpCameraPreview.visibility = View.INVISIBLE
 
+                rtmpFilePreview.bringToFront()
+                returnToLive.bringToFront()
+                main_control.bringToFront()
                 Thread {
                     Thread.sleep(50)
                     while (rtmpFile!!.isStreaming) {
@@ -927,6 +934,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                         pausedText.visibility = View.INVISIBLE
                     }
                     //rtmpCamera1!!.glInterface.setFilter(filter)
+                    settingBtn.bringToFront()
                 }
                 Thread.sleep(100)
             }
@@ -1150,7 +1158,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             speed.setTextColor(Color.WHITE)
             volumeRealTime.progress = 0
             //Toast.makeText(this, "已中斷連線", Toast.LENGTH_SHORT).show()
-
+            rtmpFilePreview.visibility = View.INVISIBLE
+            sdVideoPreview.visibility = View.INVISIBLE
         }
     }
 
@@ -1248,6 +1257,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 rtmpCameraPreview.layoutParams = bigPreviewLayoutParam
                 PGM.visibility = View.INVISIBLE
                 rtmpCamera1!!.startPreview()
+            } else {
+
             }
         }
     }
