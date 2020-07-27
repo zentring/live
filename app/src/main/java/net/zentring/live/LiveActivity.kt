@@ -859,7 +859,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         setDefaultPreviewSize()
     }
 
-    fun setDefaultPreviewSize() {
+    private fun setDefaultPreviewSize() {
         val r = 1920.0 / 1080
         data.resolution = arrayOf(1920, 1080)
         setCameraScale(r)
@@ -944,11 +944,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 Thread.sleep(100)
             }
         }).start()
-        rtmpCameraPreview.setOnClickListener {
-            if (isPaused) {
-                pickImage()
-            }
-        }
     }
 
     private fun addVideoToList(name: String, time: Int, i: Int) {

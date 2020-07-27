@@ -10,8 +10,8 @@ android {
         applicationId "net.zentring.live"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 5
-        versionName "beta-0.1.5"
+        versionCode 6
+        versionName "beta-0.1.6"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
