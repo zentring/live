@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
-import android.media.MediaCodec
-import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
@@ -28,6 +26,7 @@ import com.pedro.encoder.input.decoder.VideoDecoderInterface
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
 import com.pedro.encoder.input.gl.render.filters.NoFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRender
+import com.pedro.encoder.input.video.CameraHelper
 import com.pedro.rtplibrary.rtmp.RtmpCamera1
 import com.pedro.rtplibrary.rtmp.RtmpFromFile
 import idv.luchafang.videotrimmer.VideoTrimmerView
@@ -35,7 +34,6 @@ import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import java.io.File
 import java.io.InputStream
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.round
@@ -135,14 +133,13 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             runOnUiThread {
                 videoTrimmerView
                     .setVideo(tmpFile)
-                    .setMaxDuration(120000)             // millis
+                    .setMaxDuration(120000)                 // millis
                     .setMinDuration(100)                    // millis
                     .setFrameCountInWindow(12)
                     .setExtraDragSpace(40f)                 // pixels
                     .setOnSelectedRangeChangedListener(this)
                     .show()
                 sdVideoPreview.visibility = View.VISIBLE
-
             }
         } else {
             runOnUiThread {
@@ -572,7 +569,39 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     private fun leftButtonOnClick() {
         if (!rtmpCamera1!!.isStreaming) {
-            if (rtmpCamera1!!.prepareAudio() && rtmpCamera1!!.prepareVideo()) {
+            var resolutions = rtmpCamera1!!.resolutionsBack
+            resolutions.forEach { println("" + it.width + " " + it.height) }
+
+            resolutions.sortBy { it.width }
+            var resolution =
+                arrayOf(
+                    resolutions[resolutions.size - 2].width,
+                    resolutions[resolutions.size - 2].height
+                )
+
+            println(resolution[0])
+            println(resolution[1])
+
+            val rotation = CameraHelper.getCameraOrientation(this)
+
+            if (rtmpCamera1!!.prepareAudio() &&
+//                rtmpCamera1!!.prepareVideo(
+//                    resolution[0],
+//                    resolution[1],
+//                    30,
+//                    12000 * 1024,
+//                    false,
+//                    rotation
+//                )
+                rtmpCamera1!!.prepareVideo(
+                    1280,
+                    768,
+                    30,
+                    12000 * 1024,
+                    false,
+                    rotation
+                )
+            ) {
                 if (data.isDebug) {
                     rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
                 } else {
