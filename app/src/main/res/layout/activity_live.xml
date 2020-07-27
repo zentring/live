@@ -81,6 +81,25 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <ImageView
+        android:id="@+id/settingBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/setting_icon" />
+
+    <net.zentring.live.SettingView
+        android:id="@+id/setting"
+        android:layout_width="250dp"
+        android:layout_height="match_parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+    </net.zentring.live.SettingView>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/editControllerFrame"
         android:layout_width="match_parent"

@@ -266,6 +266,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         goLiveButton.visibility = View.INVISIBLE
         PGM.visibility = View.INVISIBLE
         returnToLive.visibility = View.INVISIBLE
+        setting.visibility = View.INVISIBLE
 
         rtmpCameraPreview.setOnTouchListener(this)
 
@@ -345,6 +346,10 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         returnToLive.setOnClickListener {
             returnToLive()
+        }
+
+        settingBtn.setOnClickListener {
+            setting.visibility = View.VISIBLE
         }
     }
 
@@ -569,19 +574,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
     private fun leftButtonOnClick() {
         if (!rtmpCamera1!!.isStreaming) {
-            var resolutions = rtmpCamera1!!.resolutionsBack
-            resolutions.forEach { println("" + it.width + " " + it.height) }
-
-            resolutions.sortBy { it.width }
-            var resolution =
-                arrayOf(
-                    resolutions[resolutions.size - 2].width,
-                    resolutions[resolutions.size - 2].height
-                )
-
-            println(resolution[0])
-            println(resolution[1])
-
             val rotation = CameraHelper.getCameraOrientation(this)
 
             if (rtmpCamera1!!.prepareAudio() &&
@@ -594,8 +586,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 //                    rotation
 //                )
                 rtmpCamera1!!.prepareVideo(
-                    1280,
-                    768,
+                    data.resolution[0],
+                    data.resolution[1],
                     30,
                     12000 * 1024,
                     false,
@@ -825,6 +817,23 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpFile = RtmpFromFile(rtmpFilePreview, this, this, this)
 
         rtmpCameraPreview.holder.addCallback(this)
+
+        var resolutions = rtmpCamera1!!.resolutionsBack
+
+        resolutions.forEach {
+            data.resolutions.add(arrayOf(it.width, it.height))
+            println("" + it.width + " " + it.height)
+        }
+        setting.setResolutions()
+        resolutions.sortBy { it.width }
+        var resolution =
+            arrayOf(
+                resolutions[resolutions.size - 2].width,
+                resolutions[resolutions.size - 2].height
+            )
+
+        println(resolution[0])
+        println(resolution[1])
 
 
 //        var info = MediaCodec.BufferInfo()

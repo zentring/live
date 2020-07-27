@@ -43,6 +43,9 @@ class data {
 
         var isDebug = false
 
+        var resolutions = MutableList(0) { arrayOf(0, 0) }
+        var resolution = arrayOf(640, 480)
+
 
         var pushurl //推流地址
                 : String? = null
