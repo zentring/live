@@ -1,6 +1,19 @@
-# live
-this system is for 網高 only
+# liveapp
+
+全案:
+http://jojoplay.net/liveapp/需求详细说明文档.docx
+
 第2阶段
+需求会议:
+http://jojoplay.net/liveapp/meeting_01.mp4
+http://jojoplay.net/liveapp/meeting_02.mp4
+
+验收标准
+http://jojoplay.net/liveapp/第2阶段.xlsx
+
+
+
+
 “剪輯”功能：剪輯、播放視頻
 
 操作邏輯描述：
