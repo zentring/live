@@ -18,6 +18,7 @@ class data {
         var isStarted = false
         var isSelectEnabled = false
         var selectedVideoList = MutableList(0) { "" }
+
         fun getTempPath() =
             File((instance)?.getExternalFilesDir(null)!!.absolutePath)
 
@@ -33,12 +34,20 @@ class data {
             return File(getStoragePath(), "/situne/live")
         }
 
-        fun getRecordPath(): File {
-            return File(getTempPath(), "viturl_buffer")
-        }
-
         fun getBufferVideoPath(): File {
             return File(getTempPath(), "/buffer.mp4")
+        }
+
+        fun getBufferVideoPartPath(): File {
+            return File(getTempPath(), "/buffer/")
+        }
+
+        fun getMergedVideoPath(): File {
+            return File(getTempPath(), "/merged.mp4")
+        }
+
+        fun getMergeTempPath(): File {
+            return File(getTempPath(), "/merged_tmp.mp4")
         }
 
         var isDebug = false

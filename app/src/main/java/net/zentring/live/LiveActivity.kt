@@ -1,10 +1,14 @@
 package net.zentring.live
 
+import VideoHandle.EpEditor
+import VideoHandle.EpVideo
+import VideoHandle.OnEditorListener
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
@@ -34,7 +38,6 @@ import com.pedro.rtplibrary.rtmp.RtmpCamera1
 import com.pedro.rtplibrary.rtmp.RtmpFromFile
 import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_live.*
-import kotlinx.android.synthetic.main.activity_setting.view.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
 import net.zentring.live.data.Companion.instance
 import java.io.File
@@ -601,6 +604,134 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         saveFileDialog.visibility = View.INVISIBLE
     }
 
+    private var shouldBreakRecordPart = false
+    private fun startStreaming() {
+
+        rtmpCamera1!!.stopPreview()
+
+        rtmpCamera1!!.startPreview(data.resolution[0], data.resolution[1])
+        if (data.isDebug) {
+            rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
+        } else {
+            rtmpCamera1!!.startStream(data.pushurl)
+        }
+
+
+        val part = data.getBufferVideoPartPath()
+        if (!part.exists()) {
+            part.mkdirs()
+        } else {
+            part.listFiles()?.forEach {
+                it.delete()
+            }
+        }
+        var i = 0
+        Thread {
+            while (true) {
+                rtmpCamera1!!.startRecord(File(part, i.toString()).absolutePath)
+                Thread.sleep(1000)
+                rtmpCamera1!!.stopRecord()
+                i++
+                if (shouldBreakRecordPart) {
+                    shouldBreakRecordPart = false
+                    break
+                }
+            }
+        }.start()
+
+//        Thread {
+//            data.getMergedVideoPath().delete()
+//            while (true) {
+//                part.listFiles()?.forEach {
+//                    if (it.isFile) {
+//                        if (it.name == "0") {
+//                            it.copyTo(data.getMergedVideoPath())
+//                        } else {
+//                            combineVideoToFirst(
+//                                data.getMergedVideoPath().absolutePath,
+//                                it.absolutePath
+//                            )
+//                        }
+//                    }
+//                }
+//                Thread.sleep(10)
+//            }
+//        }.start()
+
+
+        //Starting stream
+        if (data.targetrate != "null" && data.targetrate != null) {
+            if (data.targetrate?.toInt() == null) {
+//                        Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
+//                            .show()
+            } else {
+                rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate?.toInt()!!)
+            }
+        }
+        left_button.background =
+            ContextCompat.getDrawable(this, R.drawable.pause_streaming)
+        left_button.text = "暫停直播"
+        left_button.setTextColor(ContextCompat.getColor(this, R.color.white))
+    }
+
+    var mergeLock = false
+    private fun combineVideoToFirst(first: String, second: String) {
+        while (mergeLock) {
+            Thread.sleep(1)
+        }
+        val tmpMerge = data.getMergeTempPath()
+        val epVideos = ArrayList<EpVideo>()
+        epVideos.add(EpVideo(first))
+        epVideos.add(EpVideo(second))
+        val outputOption =
+            EpEditor.OutputOption(tmpMerge.absolutePath)
+        outputOption.setWidth(data.resolution[0])
+        outputOption.setHeight(data.resolution[1])
+        outputOption.frameRate = 30
+
+        mergeLock = true
+        EpEditor.merge(epVideos, outputOption, object : OnEditorListener {
+            override fun onSuccess() {
+                mergeLock = false
+                tmpMerge.copyTo(File(first))
+            }
+
+            override fun onFailure() {
+                mergeLock = false
+            }
+
+            override fun onProgress(progress: Float) {
+                Log.d("Progress", "$progress")
+            }
+        })
+    }
+
+    private fun stopStreaming() {
+
+        isPaused = false
+        left_button.text = "開始直播"
+        left_button.setTextColor(ContextCompat.getColor(this, R.color.purple))
+        left_button.background =
+            ContextCompat.getDrawable(this, R.drawable.start_streaming)
+
+        continue_streaming_button.visibility = View.INVISIBLE
+        rtmpCamera1!!.stopStream()
+        rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+        rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
+        rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
+        pausedText.visibility = View.INVISIBLE
+        shouldBreakRecordPart = true
+    }
+
+    private fun pauseStreaming() {
+
+        continue_streaming_button.visibility = View.VISIBLE
+        left_button.text = "停止直播"
+        pausedText.visibility = View.VISIBLE
+        setPauseFilter()
+        isPaused = true
+    }
+
     private fun leftButtonOnClick() {
         if (!rtmpCamera1!!.isStreaming) {
             val rotation = CameraHelper.getCameraOrientation(this)
@@ -615,54 +746,13 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                     rotation
                 )
             ) {
-
-                rtmpCamera1!!.stopPreview()
-
-                rtmpCamera1!!.startPreview(data.resolution[0], data.resolution[1])
-                if (data.isDebug) {
-                    rtmpCamera1!!.startStream("rtmp://x.rtmp.youtube.com/live2/mkes-2ytx-d8rc-bcmm-a0dc")
-                } else {
-                    rtmpCamera1!!.startStream(data.pushurl)
-                }
-
-                rtmpCamera1!!.startRecord(data.getBufferVideoPath().absolutePath) {
-
-                }
-                //Starting stream
-                if (data.targetrate != "null" && data.targetrate != null) {
-                    if (data.targetrate?.toInt() == null) {
-//                        Toast.makeText(this, data.targetrate.toString(), Toast.LENGTH_SHORT)
-//                            .show()
-                    } else {
-                        rtmpCamera1!!.setVideoBitrateOnFly(data.targetrate?.toInt()!!)
-                    }
-                }
-                left_button.background =
-                    ContextCompat.getDrawable(this, R.drawable.pause_streaming)
-                left_button.text = "暫停直播"
-                left_button.setTextColor(ContextCompat.getColor(this, R.color.white))
+                startStreaming()
             }
         } else {
             if (isPaused) {
-                isPaused = false
-                left_button.text = "開始直播"
-                left_button.setTextColor(ContextCompat.getColor(this, R.color.purple))
-                left_button.background =
-                    ContextCompat.getDrawable(this, R.drawable.start_streaming)
-
-                continue_streaming_button.visibility = View.INVISIBLE
-                rtmpCamera1!!.stopStream()
-                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
-                rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
-                rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
-                pausedText.visibility = View.INVISIBLE
+                stopStreaming()
             } else {
-
-                continue_streaming_button.visibility = View.VISIBLE
-                left_button.text = "停止直播"
-                pausedText.visibility = View.VISIBLE
-                setPauseFilter()
-                isPaused = true
+                pauseStreaming()
             }
         }
     }
@@ -672,7 +762,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCamera1!!.glInterface.setFilter(BlackFilterRender())
 
         val imgFile = File(data.getTempPath(), "pause.image")
-
         if (imgFile.exists()) {
             val myBitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
             pauseImage.setImageBitmap(myBitmap)
@@ -700,6 +789,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCameraPreview.bringToFront()
         PGM.bringToFront()
         main_control.bringToFront()
+        shouldBreakRecordPart = false
 
     }
 
@@ -869,9 +959,58 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         rtmpCameraPreview.layoutParams.width = (rtmpCameraPreview.height * r).toInt()
     }
 
+    var audioEffect = AudioVolume()
+    private fun loop() {
+        runOnUiThread {
+
+            val retriever = MediaMetadataRetriever()
+
+//            try {
+//                retriever.setDataSource(data.getBufferVideoPath().absolutePath)
+//                val bitmap: Bitmap? = retriever.getFrameAtTime(
+//                    1 * 1000,
+//                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+//                )
+//            } catch (e: RuntimeException) {
+//
+//            } finally {
+//                retriever.release()
+//            }
+
+            if (!rtmpCamera1!!.isStreaming) {
+                isPaused = false
+                left_button.text = "開始直播"
+                left_button.setTextColor(ContextCompat.getColor(this, R.color.purple))
+                left_button.background =
+                    ContextCompat.getDrawable(this, R.drawable.start_streaming)
+
+                continue_streaming_button.visibility = View.INVISIBLE
+
+                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
+
+
+            } else {
+                rtmpCamera1!!.setCustomAudioEffect(audioEffect)
+                volumeRealTime.progress = audioEffect.volume
+                volumeRealTime.max = volume.progress
+
+            }
+            if (isPaused) {
+                pausedText.visibility = View.VISIBLE
+            } else {
+                pausedText.visibility = View.INVISIBLE
+            }
+            //rtmpCamera1!!.glInterface.setFilter(filter)
+            settingBtn.bringToFront()
+        }
+        Thread.sleep(100)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         data.instance = this
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live)
 
         toggleVolumeBar()
@@ -893,7 +1032,6 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         initRTMPComponent()
 
-        var audioEffect = AudioVolume()
         volume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, value: Int, p2: Boolean) {
                 audioEffect.volume = value
@@ -912,36 +1050,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         })
         Thread(Runnable {
             while (true) {
-                runOnUiThread {
-                    if (!rtmpCamera1!!.isStreaming) {
-                        isPaused = false
-                        left_button.text = "開始直播"
-                        left_button.setTextColor(ContextCompat.getColor(this, R.color.purple))
-                        left_button.background =
-                            ContextCompat.getDrawable(this, R.drawable.start_streaming)
-
-                        continue_streaming_button.visibility = View.INVISIBLE
-
-                        rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
-                        rtmpCamera1!!.glInterface.setFilter(1, NoFilterRender())
-                        rtmpCamera1!!.glInterface.setFilter(2, NoFilterRender())
-
-
-                    } else {
-                        rtmpCamera1!!.setCustomAudioEffect(audioEffect)
-                        volumeRealTime.progress = audioEffect.volume
-                        volumeRealTime.max = volume.progress
-                        //Log.d("VU", audioEffect.volume.toString())
-                    }
-                    if (isPaused) {
-                        pausedText.visibility = View.VISIBLE
-                    } else {
-                        pausedText.visibility = View.INVISIBLE
-                    }
-                    //rtmpCamera1!!.glInterface.setFilter(filter)
-                    settingBtn.bringToFront()
-                }
-                Thread.sleep(100)
+                loop()
             }
         }).start()
     }
