@@ -36,7 +36,7 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        username.setText("15941131385")
+        username.setText("123")
         password.setText("123456")
 
         try {
