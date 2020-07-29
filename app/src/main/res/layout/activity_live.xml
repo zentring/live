@@ -603,5 +603,11 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <net.zentring.live.GraphicView
+        android:id="@+id/graphic_view"
+        android:layout_width="350dp"
+        android:layout_height="match_parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

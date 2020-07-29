@@ -63,5 +63,9 @@ class data {
                 : String? = null
         var initrate //推流初始化码率
                 : String? = null
+        var gp_id //当前组ID
+                : String? = null
+
+        const val API_BASE_URL = "http://www.wifigolf.com/interface/graphic/"
     }
 }
