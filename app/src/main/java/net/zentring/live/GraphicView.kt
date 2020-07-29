@@ -16,7 +16,6 @@ import com.volley.library.flowtag.FlowTagLayout.OnTagClickListener
 import com.volley.library.flowtag.adapter.BaseFlowAdapter
 import com.volley.library.flowtag.adapter.BaseTagHolder
 import kotlinx.android.synthetic.main.activity_live.*
-import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.graphic_view.view.*
 
 class GraphicView @JvmOverloads constructor(
@@ -25,6 +24,8 @@ class GraphicView @JvmOverloads constructor(
 
     var mContext: Context = context
     var playerList: MutableList<Player> = ArrayList()
+    var selectedPlayerIndex: Int = 0
+    var showData: GraphicViewData? = null
 
     init {
         View.inflate(context, R.layout.graphic_view, this)
@@ -32,13 +33,6 @@ class GraphicView @JvmOverloads constructor(
         close_graphic_view_btn.setOnClickListener {
             visibility = View.INVISIBLE
             (LiveActivity.getInstance() as LiveActivity).settingBtn.visibility = View.VISIBLE
-        }
-
-        var player: Player
-        for (index in 1..4) {
-            player = Player()
-            player.name = index.toString()
-            playerList.add(player)
         }
 
         player_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
@@ -59,7 +53,6 @@ class GraphicView @JvmOverloads constructor(
             getShowData(playerList.get(position).id.toString())
         })
 
-        getShowData("")
     }
 
     private var mPlayerItemClickListener: MyPlayerItemClickListener? = null
@@ -74,13 +67,24 @@ class GraphicView @JvmOverloads constructor(
 
     private fun getShowData(playerID: String) {
         var queue = Volley.newRequestQueue(mContext)
-        val url = data.API_BASE_URL + "getinitinfo.php?mt_id=${data.match}&gp_id=${data.gp_id}&pl_id=${playerID}"
-        Log.e("zhaofei",url)
+        val url =
+            data.API_BASE_URL + "getinitinfo.php?mt_id=${data.match}&gp_id=${data.gp_id}&pl_id=${playerID}"
         var stringRequest = StringRequest(
             Request.Method.GET, url,
             Response.Listener<String> { response ->
-//                var gson = Gson()
-                Log.e("zhaofei", response)
+                Log.e("zhaofei",response)
+                showData = Gson().fromJson(response, GraphicViewData::class.java)
+                if (showData == null) {
+                    Toast.makeText(mContext, "字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    visibility = View.INVISIBLE
+                } else {
+                    if (showData!!.status == 200) {
+                        setPlayerFlowLayoutData()
+                    } else {
+                        Toast.makeText(mContext, showData!!.msg, Toast.LENGTH_SHORT).show()
+                        visibility = View.INVISIBLE
+                    }
+                }
             },
             Response.ErrorListener {
                 Toast.makeText(mContext, "字幕数据获取失败", Toast.LENGTH_SHORT).show()
@@ -94,5 +98,19 @@ class GraphicView @JvmOverloads constructor(
     fun show() {
         visibility = View.VISIBLE
         getShowData("")
+    }
+
+    fun setPlayerFlowLayoutData() {
+        playerList.clear()
+        var player: Player
+        for ((index, item) in showData!!.data!!.list.withIndex()) {
+            player = Player()
+            player.name = item.pl_cn_name
+            player.id = item.pl_id.toString()
+            player.isCheck = item.pl_id == showData!!.data!!.pl_id
+            playerList.add(player)
+        }
+
+        player_flowlayout.adapter.replaceData(playerList)
     }
 }

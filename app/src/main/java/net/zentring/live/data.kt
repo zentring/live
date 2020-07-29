@@ -75,6 +75,57 @@ class data {
         var gp_id //当前组ID
                 : String? = null
 
-        const val API_BASE_URL = "http://www.wifigolf.com/interface/graphic/"
+        const val API_BASE_URL = "http://www.wifigolf.com/interface/graphic_test/"
+
+        enum class PLACE_TYPE(iNumber: Int) {
+            fairway(1),
+            rough(2),
+            fairway_bunker(3),
+            green_bunker(4),
+            green(5),
+            in_hole(6),
+            out_of_bounds(7),
+            lost(8),
+            immovable_obstacles(9),
+            water(10),
+            long_grass(11);
+
+            var iNumber = 0
+            fun toNumber(): Int {
+                return iNumber
+            }
+
+            init {
+                this.iNumber = iNumber
+            }
+
+            open fun getPlaceString(type: Int): String? {
+                return if (fairway.toNumber() == type) {
+                    "球道"
+                } else if (rough.toNumber() == type) {
+                    "长草"
+                } else if (fairway_bunker.toNumber() == type) {
+                    "球道沙坑"
+                } else if (green_bunker.toNumber() == type) {
+                    "果岭沙坑"
+                } else if (green.toNumber() == type) {
+                    "果岭"
+                } else if (in_hole.toNumber() == type) {
+                    "进洞"
+                } else if (out_of_bounds.toNumber() == type) {
+                    "界外"
+                } else if (lost.toNumber() == type) {
+                    "遗失球"
+                } else if (immovable_obstacles.toNumber() == type) {
+                    "不可移动障碍物"
+                } else if (water.toNumber() == type) {
+                    "水障碍"
+                } else if (long_grass.toNumber() == type) {
+                    "深长草"
+                } else {
+                    ""
+                }
+            }
+        }
     }
 }
