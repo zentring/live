@@ -2,6 +2,36 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+ext{
+    debug_versioncode = 6
+    debug_versionname = "beta-0.1.6"
+    debug_minifyEnabled = false
+    release_versioncode = 1
+    release_versionname = "release-1.0.0"
+//    buildType = "release"
+    buildType = "debug"
+}
+
+def getBuildType() {
+    return ext.buildType
+}
+
+def releaseTime() {
+    return new Date().format("yyyyMMdd_HHmmss", TimeZone.getTimeZone("GMT+08:00"))
+}
+
+def getMyVersionCode() {
+    return "debug".equals(ext.buildType) ? ext.debug_versioncode : ext.release_versioncode
+}
+
+def getMyVersionName() {
+    return "debug".equals(ext.buildType) ? ext.debug_versionname : ext.release_versionname
+}
+
+def getDebugMinifyEnabled() {
+    return ext.debug_minifyEnabled
+}
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.0"
@@ -10,8 +40,8 @@ android {
         applicationId "net.zentring.live"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 6
-        versionName "beta-0.1.6"
+        versionCode getMyVersionCode()
+        versionName getMyVersionName()
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -29,6 +59,20 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
+    android.applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def fileName = ""
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                if (variant.buildType.name.equals('release')) {
+                    fileName = "live_${defaultConfig.versionName}_${releaseTime()}.apk"
+                } else if (variant.buildType.name.equals('debug')) {
+                    fileName = "live_${defaultConfig.versionName}_${releaseTime()}.apk"
+                }
+                output.outputFileName = fileName
+            }
+        }
     }
 }
 
