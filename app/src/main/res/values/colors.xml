@@ -7,4 +7,11 @@
     <color name="purple">#283593</color>
     <color name="light_green">#6be362</color>
     <color name="gray">@android:color/darker_gray</color>
+    <color name="transparentBlack">#70000000</color>
+    <color name="transparentGray">#80838181</color>
+    <color name="red">#ff142b</color>
+    <color name="red_dark">#ffcc0000</color>
+    <color name="blue">#4150a2</color>
+    <color name="blue_dark">#293ca3</color>
+    <color name="player_btn_gray">#aeaeae</color>
 </resources>

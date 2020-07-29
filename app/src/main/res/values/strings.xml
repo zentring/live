@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">網高手機直播</string>
+
+    <string name="undo_score">撤&#160;销</string>
+    <string name="up_graphic">上字幕</string>
+    <string name="score">成绩</string>
+    <string name="rank">排名</string>
+    <string name="player">球员</string>
+    <string name="to_player_graphic">返回球员击球&#160;></string>
+    <string name="this_group_rank_graphic">本组排名&#160;></string>
 </resources>

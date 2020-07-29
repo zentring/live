@@ -289,6 +289,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         PGM.visibility = View.INVISIBLE
         returnToLive.visibility = View.INVISIBLE
         setting.visibility = View.INVISIBLE
+        graphic_view.visibility = View.INVISIBLE
 
         rtmpCameraPreview.setOnTouchListener(this)
 
@@ -379,6 +380,12 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         pausedText.addTextChangedListener {
             pauseText.text = it
         }
+
+        edit.setOnClickListener {
+            graphic_view.show()
+            graphic_view.bringToFront()
+            settingBtn.visibility = View.INVISIBLE
+        }
     }
 
     private fun returnToLive() {
@@ -457,6 +464,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
             Toast.makeText(this, "直播後才有畫面可剪輯", Toast.LENGTH_SHORT).show()
             return
         }
+        graphic_view.visibility = View.INVISIBLE
         rtmpCameraPreview.layoutParams = smallPreviewLayoutParam
         sdVideoPreview.visibility = View.VISIBLE
         editControllerFrame.visibility = View.VISIBLE
@@ -785,6 +793,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         PGM.visibility = View.INVISIBLE
         goLiveButton.visibility = View.INVISIBLE
         returnToLive.visibility = View.INVISIBLE
+        graphic_view.visibility = View.INVISIBLE;
 
         rtmpCameraPreview.bringToFront()
         PGM.bringToFront()

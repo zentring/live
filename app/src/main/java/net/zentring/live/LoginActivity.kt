@@ -92,6 +92,7 @@ class LoginActivity : AppCompatActivity() {
                         data.match = jObject.getString("match")
                         data.round = jObject.getString("round")
                         data.graphic = jObject.getString("graphic")
+                        data.gp_id = jObject.getString("gp_id")
 
                         var players = jObject.getJSONArray("player")
                         var player = MutableList(0) { Player() }

@@ -53,5 +53,8 @@ dependencies {
     implementation 'com.github.pedroSG94.rtmp-rtsp-stream-client-java:rtplibrary:1.8.4'
     implementation 'com.android.volley:volley:1.1.1'
     implementation 'com.github.yangjie10930:EpMedia:v0.9.5'
-
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    //瀑布标签
+    implementation 'com.github.VolleyCN.Android-FlowLayout:library:1.0.2'
+    implementation 'com.google.code.gson:gson:2.8.6'
 }
