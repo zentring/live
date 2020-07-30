@@ -8,4 +8,11 @@
     <string name="player">球员</string>
     <string name="to_player_graphic">返回球员击球&#160;></string>
     <string name="this_group_rank_graphic">本组排名&#160;></string>
+    <string name="current_hole">第%d洞</string>
+    <string name="current_hit_sort">第%d杆</string>
+    <string name="to_pin">距离旗杆%s码</string>
+    <string name="place">落点在%s</string>
+    <string name="hit_distance">击球距离%s码</string>
+    <string name="hit">击球</string>
+    <string name="select_club">选择球杆</string>
 </resources>

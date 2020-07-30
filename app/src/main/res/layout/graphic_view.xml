@@ -53,9 +53,9 @@
 
     <FrameLayout
         android:id="@+id/graphic_fl"
-        android:layout_marginTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/action_btn_cl">
@@ -64,7 +64,7 @@
             android:id="@+id/hit_graphic_cl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/graphic_left_part_preview"
@@ -85,7 +85,6 @@
                     android:layout_marginTop="5dp"
                     android:maxWidth="90dp"
                     android:maxLines="1"
-                    android:text="冯珊珊珊"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toStartOf="parent"
@@ -99,7 +98,6 @@
                     android:layout_marginEnd="5dp"
                     android:maxWidth="90dp"
                     android:maxLines="1"
-                    android:text="第14洞"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintEnd_toStartOf="@+id/hole_par_tv"
@@ -112,7 +110,6 @@
                     android:layout_marginTop="5dp"
                     android:layout_marginEnd="5dp"
                     android:maxLines="1"
-                    android:text="标准杆 4"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintEnd_toStartOf="@+id/hole_total_yard_tv"
@@ -125,7 +122,6 @@
                     android:layout_marginTop="5dp"
                     android:layout_marginEnd="5dp"
                     android:maxLines="1"
-                    android:text="455码"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -145,7 +141,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="5dp"
-                    android:text="第2杆"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toStartOf="parent"
@@ -156,7 +151,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="3号铁"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toEndOf="@+id/current_hit_number_tv"
@@ -167,7 +161,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="距离旗杆225码"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toEndOf="@+id/current_hit_club_tv"
@@ -188,7 +181,6 @@
                     android:layout_marginStart="5dp"
                     android:layout_marginTop="5dp"
                     android:layout_marginBottom="5dp"
-                    android:text="第1杆"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -200,7 +192,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="1号木"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toEndOf="@+id/prev_hit_number_tv"
@@ -211,7 +202,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="230码"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toEndOf="@+id/prev_hit_club_tv"
@@ -222,7 +212,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
-                    android:text="落点在长草"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintStart_toEndOf="@+id/prev_hit_yard_tv"
@@ -257,7 +246,6 @@
                     android:id="@+id/score_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="-2"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintBottom_toBottomOf="@+id/line3"
@@ -288,7 +276,6 @@
                     android:id="@+id/rank_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="1"
                     android:textColor="@color/white"
                     android:textSize="@dimen/textsize_normal"
                     app:layout_constraintBottom_toBottomOf="parent"
@@ -301,11 +288,13 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/rank_graphic_cl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="10dp"
-            android:background="@drawable/white_border_transparent_bg3">
+            android:background="@drawable/white_border_transparent_bg3"
+            android:visibility="gone">
 
             <LinearLayout
                 android:id="@+id/rank_head_ll"
@@ -357,35 +346,90 @@
 
     </FrameLayout>
 
-    <TextView
-        android:id="@+id/graphic_type_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="10dp"
-        android:text="@string/this_group_rank_graphic"
-        android:textColor="@color/white"
-        android:textSize="@dimen/textsize_normal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/graphic_fl" />
-
-    <TextView
-        android:id="@+id/tv1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:text="@string/player"
-        android:textColor="@color/white"
-        android:textSize="@dimen/textsize_normal"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/graphic_type_btn" />
-
-    <com.volley.library.flowtag.FlowTagLayout
-        android:id="@+id/player_flowlayout"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        app:layout_constraintTop_toBottomOf="@+id/tv1" />
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/graphic_fl">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/graphic_type_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:layout_marginEnd="10dp"
+                android:text="@string/this_group_rank_graphic"
+                android:textColor="@color/white"
+                android:textSize="@dimen/textsize_normal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+
+            <TextView
+                android:id="@+id/tv1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/player"
+                android:textColor="@color/white"
+                android:textSize="@dimen/textsize_normal"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/graphic_type_btn" />
+
+            <com.volley.library.flowtag.FlowTagLayout
+                android:id="@+id/player_flowlayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                app:layout_constraintTop_toBottomOf="@+id/tv1" />
+
+            <TextView
+                android:id="@+id/tv2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/hit"
+                android:textColor="@color/white"
+                android:textSize="@dimen/textsize_normal"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/player_flowlayout" />
+
+            <com.volley.library.flowtag.FlowTagLayout
+                android:id="@+id/hit_btn_flowlayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                app:layout_constraintTop_toBottomOf="@+id/tv2" />
+
+            <TextView
+                android:id="@+id/tv3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/select_club"
+                android:textColor="@color/white"
+                android:textSize="@dimen/textsize_normal"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/hit_btn_flowlayout" />
+
+            <com.volley.library.flowtag.FlowTagLayout
+                android:id="@+id/club_btn_flowlayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                app:layout_constraintTop_toBottomOf="@+id/tv3" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </ScrollView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

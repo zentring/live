@@ -20,9 +20,12 @@ class GraphicViewData {
         var prev_tee_str: String? = null
         var prev_left_tee: Double? = null//当前杆to pin值
         var prev_left_tee_str: String? = null
+        var prev_sc_place: Int? = null
+        var prev_sc_golf_club: Int? = null
         var sc_place: Int? = null//当前杆击球落点
-        var sc_golf_club: Int? = null//落点
+        var sc_golf_club: Int? = null//当前杆球杆
         var list: MutableList<Player> = ArrayList()
+        var golf_club_list: MutableList<Int> = ArrayList()
 
         inner class Player {
             var pl_id: Int? = null
