@@ -104,5 +104,7 @@ class data {
                 else -> ""
             }
         }
+
+        var loginUser: String = ""
     }
 }

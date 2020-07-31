@@ -101,4 +101,6 @@ dependencies {
     //瀑布标签
     implementation 'com.github.VolleyCN.Android-FlowLayout:library:1.0.2'
     implementation 'com.google.code.gson:gson:2.8.6'
+    //等待框动画用
+    implementation 'com.nineoldandroids:library:2.4.0'
 }

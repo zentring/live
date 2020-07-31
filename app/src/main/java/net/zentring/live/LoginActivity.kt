@@ -107,6 +107,7 @@ class LoginActivity : AppCompatActivity() {
                         data.minrate = jObject.getString("minrate")
                         data.targetrate = jObject.getString("targetrate")
                         data.initrate = jObject.getString("initrate")
+                        data.loginUser = username.text.toString()
                         frame.visibility = View.INVISIBLE
                         goLiveActivity()
                     }

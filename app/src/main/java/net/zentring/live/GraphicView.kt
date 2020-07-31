@@ -19,6 +19,7 @@ import com.volley.library.flowtag.adapter.BaseFlowAdapter
 import com.volley.library.flowtag.adapter.BaseTagHolder
 import kotlinx.android.synthetic.main.activity_live.*
 import kotlinx.android.synthetic.main.graphic_view.view.*
+import net.zentring.live.CustomLoadingView.ShapeLoadingDialog
 import net.zentring.live.adapter.RankAdapter
 
 class GraphicView @JvmOverloads constructor(
@@ -35,11 +36,17 @@ class GraphicView @JvmOverloads constructor(
     var nowPreviewGraphicType = 1 // 1击球字幕 2排名字幕
     var rankList: MutableList<RankReponse.MyData.RankInfo> = ArrayList()
     var selectedClubID = -1
+    var mLoadingDialog: ShapeLoadingDialog
 
     init {
         View.inflate(context, R.layout.graphic_view, this)
 
         queue = Volley.newRequestQueue(mContext)
+
+        mLoadingDialog = ShapeLoadingDialog.Builder(context)
+            .build()
+        mLoadingDialog.setCancelable(false)
+        mLoadingDialog.setCanceledOnTouchOutside(false)
 
         close_graphic_view_btn.setOnClickListener {
             visibility = View.INVISIBLE
@@ -108,7 +115,9 @@ class GraphicView @JvmOverloads constructor(
             }
         }
         club_btn_flowlayout.setOnTagClickListener(OnTagClickListener { parent, view, position ->
-            clubList[position].id?.let { saveClub(it) }
+            if (clubList.size > 0) {
+                clubList[position].id?.let { saveClub(it) }
+            }
         })
 
         graphic_type_btn.setOnClickListener {
@@ -143,12 +152,14 @@ class GraphicView @JvmOverloads constructor(
     }
 
     private fun getHitGraphicData() {
+        mLoadingDialog.show()
         var playerID = ""
         if (selectedPlayerIndex != -1) {
             playerID = playerList[selectedPlayerIndex].id.toString()
         }
         val url =
             data.API_BASE_URL + "getinitinfo.php?mt_id=${data.match}&gp_id=${data.gp_id}&pl_id=${playerID}"
+        Log.e("zhaofei", url)
         val stringRequest = StringRequest(
             Request.Method.GET, url,
             Response.Listener<String> { response ->
@@ -168,8 +179,10 @@ class GraphicView @JvmOverloads constructor(
                         visibility = View.INVISIBLE
                     }
                 }
+                mLoadingDialog.dismiss()
             },
             Response.ErrorListener {
+                mLoadingDialog.dismiss()
                 Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
                 visibility = View.INVISIBLE
                 it.printStackTrace()
@@ -264,6 +277,7 @@ class GraphicView @JvmOverloads constructor(
         if (selectedPlayerIndex == -1) {
             Toast.makeText(mContext, "请先选择球员", Toast.LENGTH_SHORT).show()
         } else {
+            mLoadingDialog.show()
             val playerID = playerList[selectedPlayerIndex].id
             val holeID = hitGraphicData?.data?.mh_id
             val hitNumber = hitGraphicData?.data?.sc_score
@@ -271,7 +285,7 @@ class GraphicView @JvmOverloads constructor(
             val lat: Double = 100.0
             val url =
                 data.API_BASE_URL + "setplace.php?mt_id=${data.match}&pl_id=${playerID}&sc_place=${placeID}" +
-                        "&rd_id=${data.round}&ho_id=${holeID}&sc_score=${hitNumber}&lon=${lon}&lat=${lat}"
+                        "&rd_id=${data.round}&ho_id=${holeID}&sc_score=${hitNumber}&lon=${lon}&lat=${lat}&user=${data.loginUser}"
             val stringRequest = StringRequest(
                 Request.Method.GET, url,
                 Response.Listener<String> { response ->
@@ -288,8 +302,10 @@ class GraphicView @JvmOverloads constructor(
                             Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
                         }
                     }
+                    mLoadingDialog.dismiss()
                 },
                 Response.ErrorListener {
+                    mLoadingDialog.dismiss()
                     Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
                     it.printStackTrace()
                 }
@@ -302,12 +318,13 @@ class GraphicView @JvmOverloads constructor(
         if (selectedPlayerIndex == -1) {
             Toast.makeText(mContext, "请先选择球员", Toast.LENGTH_SHORT).show()
         } else {
+            mLoadingDialog.show()
             val playerID = playerList[selectedPlayerIndex].id
             val holeID = hitGraphicData?.data?.mh_id
             val hitNumber = hitGraphicData?.data?.sc_score
             val url =
                 data.API_BASE_URL + "setgolfclub.php?mt_id=${data.match}&pl_id=${playerID}&sc_golf_club=${clubID}&rd_id=${data.round}" +
-                        "&ho_id=${holeID}&sc_score=${hitNumber}"
+                        "&ho_id=${holeID}&sc_score=${hitNumber}&user=${data.loginUser}"
             val stringRequest = StringRequest(
                 Request.Method.GET, url,
                 Response.Listener<String> { response ->
@@ -325,8 +342,10 @@ class GraphicView @JvmOverloads constructor(
                             Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
                         }
                     }
+                    mLoadingDialog.dismiss()
                 },
                 Response.ErrorListener {
+                    mLoadingDialog.dismiss()
                     Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
                     it.printStackTrace()
                 }
@@ -336,6 +355,7 @@ class GraphicView @JvmOverloads constructor(
     }
 
     private fun getRank() {
+        mLoadingDialog.show()
         val url =
             data.API_BASE_URL + "getrank.php?mt_id=${data.match}&gp_id=${data.gp_id}"
         val stringRequest = StringRequest(
@@ -356,8 +376,10 @@ class GraphicView @JvmOverloads constructor(
                         Toast.makeText(mContext, rankReponse.msg, Toast.LENGTH_SHORT).show()
                     }
                 }
+                mLoadingDialog.dismiss()
             },
             Response.ErrorListener {
+                mLoadingDialog.dismiss()
                 Toast.makeText(mContext, "排名字幕数据获取失败", Toast.LENGTH_SHORT).show()
                 visibility = View.INVISIBLE
                 it.printStackTrace()
@@ -381,11 +403,12 @@ class GraphicView @JvmOverloads constructor(
         if (selectedPlayerIndex == -1) {
             Toast.makeText(mContext, "请先选择球员", Toast.LENGTH_SHORT).show()
         } else {
+            mLoadingDialog.show()
             val playerID = playerList[selectedPlayerIndex].id
             val holeID = hitGraphicData?.data?.mh_id
             val hitNumber = hitGraphicData?.data?.sc_score
             val url =
-                data.API_BASE_URL + "undo.php?mt_id=${data.match}&pl_id=${playerID}" + "&rd_id=${data.round}&ho_id=${holeID}&sc_score=${hitNumber}"
+                data.API_BASE_URL + "undo.php?mt_id=${data.match}&pl_id=${playerID}" + "&rd_id=${data.round}&ho_id=${holeID}&sc_score=${hitNumber}&user=${data.loginUser}"
             Log.e("zhaofei", url)
             val stringRequest = StringRequest(
                 Request.Method.GET, url,
@@ -403,8 +426,10 @@ class GraphicView @JvmOverloads constructor(
                             Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
                         }
                     }
+                    mLoadingDialog.dismiss()
                 },
                 Response.ErrorListener {
+                    mLoadingDialog.dismiss()
                     Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
                     it.printStackTrace()
                 }

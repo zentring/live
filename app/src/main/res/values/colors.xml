@@ -14,4 +14,7 @@
     <color name="blue">#4150a2</color>
     <color name="blue_dark">#293ca3</color>
     <color name="player_btn_gray">#aeaeae</color>
+    <color name="alert_pink_dark">#fd2e6c</color>
+    <color name="alert_violet_dark">#293ca3</color>
+    <color name="my_yellow_dark">#f4ba0b</color>
 </resources>
