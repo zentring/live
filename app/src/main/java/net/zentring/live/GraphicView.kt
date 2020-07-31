@@ -1,6 +1,7 @@
 package net.zentring.live
 
 import android.content.Context
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -22,7 +23,7 @@ import kotlinx.android.synthetic.main.graphic_view.view.*
 import net.zentring.live.CustomLoadingView.ShapeLoadingDialog
 import net.zentring.live.adapter.RankAdapter
 
-class GraphicView @JvmOverloads constructor(
+open class GraphicView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr) {
 
@@ -135,6 +136,11 @@ class GraphicView @JvmOverloads constructor(
         //撤销
         undo_score_btn.setOnClickListener {
             undo()
+        }
+
+        //上字幕
+        up_graphic_btn.setOnClickListener {
+            upGraphic()
         }
 
         getHitGraphicData()
@@ -268,9 +274,6 @@ class GraphicView @JvmOverloads constructor(
             prev_hit_yard_tv.text = ""
             prev_hit_place_tv.text = ""
         }
-    }
-
-    fun setHitBtnFlowLayoutData() {
     }
 
     private fun savePlace(placeID: Int) {
@@ -436,5 +439,67 @@ class GraphicView @JvmOverloads constructor(
             )
             queue.add(stringRequest)
         }
+    }
+
+    private fun upGraphic() {
+        mLoadingDialog.show()
+        var url: String = ""
+        var code = ""
+        if (nowPreviewGraphicType == 1) {
+            val holeID = hitGraphicData?.data?.mh_id
+            val hitNumber = hitGraphicData?.data?.sc_score
+            val playerName = hitGraphicData?.data?.pl_cn_name
+            val score = hitGraphicData?.data?.su_to_par
+            val rank = hitGraphicData?.data?.su_rank
+            val holePar = hitGraphicData?.data?.mh_par
+            val totalYard = hitGraphicData?.data?.mh_tee
+            val prevTee = hitGraphicData?.data?.prev_tee
+            val prevLeftTee = hitGraphicData?.data?.prev_left_tee
+            val prevScPlace = hitGraphicData?.data?.prev_sc_place
+            val prevScGolfClub = hitGraphicData?.data?.prev_sc_golf_club
+            code = "info"
+            url = data.API_BASE_URL + "live_png.php?code=${code}&pl_cn_name=${playerName}&sc_to_par=${score}&sc_rank=${rank}" +
+                    "&sc_score=${hitNumber}&ho_id=${holeID}&mh_par=${holePar}&mh_tee=${totalYard}&prev_tee=${prevTee}&prev_left_tee=${prevLeftTee}" +
+                    "&prev_sc_place=${prevScPlace}&prev_sc_golf_club=${prevScGolfClub}"
+        } else {
+            code = "rank"
+            val rankJsonString = Gson().toJson(rankList)
+            url = data.API_BASE_URL + "live_png.php?code=${code}&list=${rankJsonString}"
+        }
+        Log.e("zhaofei", url)
+        val stringRequest = StringRequest(
+            Request.Method.GET, url,
+            Response.Listener<String> { response ->
+                Log.e("zhaofei", response)
+                val graphicVo = Gson().fromJson(response, GraphicVo::class.java)
+                if (graphicVo == null) {
+                    Toast.makeText(mContext, "生成击球字幕失败", Toast.LENGTH_SHORT).show()
+                } else {
+                    if (!TextUtils.isEmpty(graphicVo.url)) {
+                        if (::graphicListener.isInitialized) {
+                            if (nowPreviewGraphicType == 1) {
+                                graphicListener(GraphicType.HIT, graphicVo.url, graphicVo.time)
+                            } else {
+                                graphicListener(GraphicType.RANK, graphicVo.url, graphicVo.time)
+                            }
+                        }
+                    } else {
+                        Toast.makeText(mContext, "生成击球字幕失败", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                mLoadingDialog.dismiss()
+            },
+            Response.ErrorListener {
+                mLoadingDialog.dismiss()
+                Toast.makeText(mContext, "生成击球字幕失败", Toast.LENGTH_SHORT).show()
+                it.printStackTrace()
+            }
+        )
+        queue.add(stringRequest)
+    }
+
+    private lateinit var graphicListener: (GraphicType, String, Long) -> Unit
+    fun setGraphicListener(listener: (GraphicType, String, Long) -> Unit) {
+        this@GraphicView.graphicListener = listener
     }
 }

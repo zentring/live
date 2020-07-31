@@ -33,13 +33,19 @@ import com.pedro.encoder.input.decoder.VideoDecoderInterface
 import com.pedro.encoder.input.gl.render.filters.AndroidViewFilterRender
 import com.pedro.encoder.input.gl.render.filters.BlackFilterRender
 import com.pedro.encoder.input.gl.render.filters.NoFilterRender
+import com.pedro.encoder.input.gl.render.filters.`object`.ImageObjectFilterRender
 import com.pedro.encoder.input.video.CameraHelper
+import com.pedro.encoder.utils.gl.TranslateTo
 import com.pedro.rtplibrary.rtmp.RtmpCamera1
 import com.pedro.rtplibrary.rtmp.RtmpFromFile
 import idv.luchafang.videotrimmer.VideoTrimmerView
 import kotlinx.android.synthetic.main.activity_live.*
 import net.ossrs.rtmp.ConnectCheckerRtmp
+import net.zentring.live.common.Common
+import net.zentring.live.common.MathUtils
 import net.zentring.live.data.Companion.instance
+import net.zentring.live.graphic.HitGraphic
+import net.zentring.live.graphic.RankGraphic
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -383,9 +389,113 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
 
         edit.setOnClickListener {
             graphic_view.show()
+            graphic_view.setGraphicListener { graphicType: GraphicType, url: String, time: Long ->
+                upGraphic(graphicType, url, time)
+            }
             graphic_view.bringToFront()
             settingBtn.visibility = View.INVISIBLE
         }
+    }
+
+    private fun upGraphic(graphicType: GraphicType, url: String, time: Long) {
+        when (graphicType) {
+            GraphicType.HIT -> upHitGraphic(url, time)
+            GraphicType.RANK -> upRankGraphic(url, time)
+        }
+    }
+
+    private fun upHitGraphic(url: String, time: Long) {
+        val graphicID = 1
+        val hitGraphic = HitGraphic()
+        hitGraphic.onStatusListener { whetherUp, path, width, height ->
+            if (whetherUp == Common.WHETHER_UP_GRAPHIC_STATUS.can.toNumber()) {
+
+                val hitGraphicRender = ImageObjectFilterRender()
+                hitGraphicRender.setImage(Common.getBitmap(path))
+                //一定要先设置setScale，才可以用TranslateTo设置setPosition
+                hitGraphicRender.setScale(
+                    MathUtils.div(width.toDouble(), data.resolution[0].toDouble())
+                        .toFloat() * 100 * 2,
+                    MathUtils.div(height.toDouble(), data.resolution[1].toDouble())
+                        .toFloat() * 100 * 2
+                )
+                hitGraphicRender.setPosition(TranslateTo.TOP_RIGHT)
+                Log.e(
+                    "zhaofei",
+                    "width" + MathUtils.div(width.toDouble(), data.resolution[0].toDouble())
+                        .toString()
+                )
+                Log.e(
+                    "zhaofei",
+                    "height" + MathUtils.div(height.toDouble(), data.resolution[1].toDouble())
+                        .toString()
+                )
+//                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(graphicID, hitGraphicRender)
+                clearGraphic(graphicID, 0, time)
+            } else {
+                Toast.makeText(applicationContext, "下载字幕失败!!!", Toast.LENGTH_SHORT).show()
+                //                    setBtnEnableStatus(prizeGraphicBtn, true)
+            }
+        }
+        hitGraphic.useGraphic(url)
+    }
+
+    private fun upRankGraphic(url: String, time: Long) {
+        val graphicID = 2
+        val rankGraphic = RankGraphic()
+        rankGraphic.onStatusListener { whetherUp, path, width, height ->
+            if (whetherUp == Common.WHETHER_UP_GRAPHIC_STATUS.can.toNumber()) {
+
+                val rankGraphicRender = ImageObjectFilterRender()
+                rankGraphicRender.setImage(Common.getBitmap(path))
+                //一定要先设置setScale，才可以用TranslateTo设置setPosition
+                rankGraphicRender.setScale(
+                    MathUtils.div(width.toDouble(), data.resolution[0].toDouble())
+                        .toFloat() * 100 * 2,
+                    MathUtils.div(height.toDouble(), data.resolution[1].toDouble())
+                        .toFloat() * 100 * 2
+                )
+                rankGraphicRender.setPosition(TranslateTo.CENTER)
+                Log.e(
+                    "zhaofei",
+                    "width" + MathUtils.div(width.toDouble(), data.resolution[0].toDouble())
+                        .toString()
+                )
+                Log.e(
+                    "zhaofei",
+                    "height" + MathUtils.div(height.toDouble(), data.resolution[1].toDouble())
+                        .toString()
+                )
+//                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(graphicID, rankGraphicRender)
+                clearGraphic(graphicID, 0, time)
+            } else {
+                Toast.makeText(applicationContext, "下载字幕失败!!!", Toast.LENGTH_SHORT).show()
+                //                    setBtnEnableStatus(prizeGraphicBtn, true)
+            }
+        }
+        rankGraphic.useGraphic(url)
+    }
+
+    private var mTimer //定时下字幕
+            : Timer? = null
+
+    private fun clearGraphic(
+        id: Int,
+        btn: Int,
+        time: Long
+    ) {
+        if (mTimer == null) {
+            mTimer = Timer()
+        }
+        val timerTask: TimerTask = object : TimerTask() {
+            override fun run() {
+//                rtmpCamera1!!.glInterface.setFilter(NoFilterRender())
+                rtmpCamera1!!.glInterface.setFilter(id, NoFilterRender())
+            }
+        }
+        mTimer!!.schedule(timerTask, time)
     }
 
     private fun returnToLive() {
@@ -636,7 +746,20 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
         var i = 0
         Thread {
             while (true) {
-                rtmpCamera1!!.startRecord(File(part, i.toString()).absolutePath)
+                /*
+                java.lang.IllegalArgumentException
+        at android.media.MediaCodec.native_configure(Native Method)
+        at android.media.MediaCodec.configure(MediaCodec.java:2023)
+        at android.media.MediaCodec.configure(MediaCodec.java:1951)
+        at com.pedro.encoder.video.VideoEncoder.prepareVideoEncoder(VideoEncoder.java:128)
+        at com.pedro.encoder.video.VideoEncoder.reset(VideoEncoder.java:196)
+        at com.pedro.rtplibrary.base.Camera1Base.resetVideoEncoder(Camera1Base.java:484)
+        at com.pedro.rtplibrary.base.Camera1Base.startRecord(Camera1Base.java:287)
+        at com.pedro.rtplibrary.base.Camera1Base.startRecord(Camera1Base.java:293)
+        at net.zentring.live.LiveActivity$startStreaming$2.run(LiveActivity.kt:675)
+        at java.lang.Thread.run(Thread.java:929)
+                 */
+//                rtmpCamera1!!.startRecord(File(part, i.toString()).absolutePath)
                 Thread.sleep(1000)
                 rtmpCamera1!!.stopRecord()
                 i++
@@ -748,8 +871,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
                 rtmpCamera1!!.prepareVideo(
                     data.resolution[0],
                     data.resolution[1],
-                    30,
-                    12000 * 1024,
+                    25,
+                    5000 * 1024,
                     false,
                     rotation
                 )
@@ -959,8 +1082,8 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     private fun setDefaultPreviewSize() {
-        val r = 1920.0 / 1080
-        data.resolution = arrayOf(1920, 1080)
+        val r = 1280.0 / 720
+        data.resolution = arrayOf(1280, 720)
         setCameraScale(r)
     }
 
@@ -1295,6 +1418,7 @@ class LiveActivity : AppCompatActivity(), ConnectCheckerRtmp, SurfaceHolder.Call
     }
 
     override fun onDestroy() {
+        mTimer?.cancel()
         super.onDestroy()
         this.releaseInstance()
         finishAffinity()

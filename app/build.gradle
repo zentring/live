@@ -38,7 +38,7 @@ android {
 
     defaultConfig {
         applicationId "net.zentring.live"
-        minSdkVersion 26
+        minSdkVersion 29
         targetSdkVersion 30
         versionCode getMyVersionCode()
         versionName getMyVersionName()
@@ -103,4 +103,5 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
     //等待框动画用
     implementation 'com.nineoldandroids:library:2.4.0'
+    implementation 'org.xutils:xutils:3.5.1'
 }

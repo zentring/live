@@ -1,6 +1,8 @@
 package net.zentring.live
 
+import android.os.Environment
 import android.text.TextUtils
+import java.io.File
 
 class Utils {
     companion object StaticParams {
@@ -26,6 +28,20 @@ class Utils {
                 str = str.replace("[.]$".toRegex(), "") //如最后一位是.则去掉
             }
             return str
+        }
+
+        val SD_DIR =
+            Environment.getExternalStorageDirectory().path
+        val RESOURCE_DIR = "/situne/live"
+
+        @JvmStatic
+        fun getHitGraphicPath(): String {
+            return "$SD_DIR$RESOURCE_DIR/graphic/hit/"
+        }
+
+        @JvmStatic
+        fun getRankGraphicPath(): String {
+            return "$SD_DIR$RESOURCE_DIR/graphic/rank/"
         }
     }
 }

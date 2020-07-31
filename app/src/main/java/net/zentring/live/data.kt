@@ -1,5 +1,6 @@
 package net.zentring.live
 
+import android.app.DownloadManager
 import android.content.Context
 import android.os.Build
 import android.os.Environment
@@ -53,6 +54,7 @@ class data {
         var isDebug = false
 
         var resolutions = MutableList(0) { arrayOf(0, 0) }
+//        var resolution = arrayOf(1280, 720)
         var resolution = arrayOf(1280, 720)
 
 
@@ -106,5 +108,6 @@ class data {
         }
 
         var loginUser: String = ""
+        var downloadManager: DownloadManager? = null
     }
 }
