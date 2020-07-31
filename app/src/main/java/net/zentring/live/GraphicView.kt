@@ -6,7 +6,9 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.android.volley.Request
+import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
@@ -17,20 +19,27 @@ import com.volley.library.flowtag.adapter.BaseFlowAdapter
 import com.volley.library.flowtag.adapter.BaseTagHolder
 import kotlinx.android.synthetic.main.activity_live.*
 import kotlinx.android.synthetic.main.graphic_view.view.*
+import net.zentring.live.adapter.RankAdapter
 
 class GraphicView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr) {
 
+    val queue: RequestQueue
     var mContext: Context = context
     var playerList: MutableList<Player> = ArrayList()
     var selectedPlayerIndex: Int = -1
-    var showData: GraphicViewData? = null
+    var hitGraphicData: GraphicViewData? = null
     var placeList: MutableList<Place> = ArrayList()
     var clubList: MutableList<Club> = ArrayList()
+    var nowPreviewGraphicType = 1 // 1击球字幕 2排名字幕
+    var rankList: MutableList<RankReponse.MyData.RankInfo> = ArrayList()
+    var selectedClubID = -1
 
     init {
         View.inflate(context, R.layout.graphic_view, this)
+
+        queue = Volley.newRequestQueue(mContext)
 
         close_graphic_view_btn.setOnClickListener {
             visibility = View.INVISIBLE
@@ -38,7 +47,6 @@ class GraphicView @JvmOverloads constructor(
         }
 
         //球员按钮
-        player_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
         player_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
         player_flowlayout.setTagShowMode(FlowTagLayout.FLOW_TAG_SHOW_SPAN)
         player_flowlayout.setSpanCount(2)
@@ -53,7 +61,7 @@ class GraphicView @JvmOverloads constructor(
         }
         player_flowlayout.setOnTagClickListener(OnTagClickListener { parent, view, position ->
             selectedPlayerIndex = position
-            getShowData()
+            getHitGraphicData()
         })
 
         //落点按钮
@@ -71,9 +79,8 @@ class GraphicView @JvmOverloads constructor(
         }
 
         hit_btn_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
-        hit_btn_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
-        hit_btn_flowlayout.setTagShowMode(FlowTagLayout.FLOW_TAG_SHOW_SPAN)
-        hit_btn_flowlayout.setSpanCount(4)
+        hit_btn_flowlayout.setTagShowMode(FlowTagLayout.FLOW_TAG_SHOW_FREE)
+//        hit_btn_flowlayout.setSpanCount(4)
         hit_btn_flowlayout.adapter = object : BaseFlowAdapter<Place, BaseTagHolder>(
             R.layout.adapter_place_flow_item,
             placeList
@@ -84,11 +91,10 @@ class GraphicView @JvmOverloads constructor(
             }
         }
         hit_btn_flowlayout.setOnTagClickListener(OnTagClickListener { parent, view, position ->
-            savePlace()
+            placeList[position].id?.let { savePlace(it) }
         })
 
         //球杆按钮
-        club_btn_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
         club_btn_flowlayout.setTagCheckedMode(FlowTagLayout.FLOW_TAG_CHECKED_SINGLE)
         club_btn_flowlayout.setTagShowMode(FlowTagLayout.FLOW_TAG_SHOW_SPAN)
         club_btn_flowlayout.setSpanCount(4)
@@ -102,39 +108,69 @@ class GraphicView @JvmOverloads constructor(
             }
         }
         club_btn_flowlayout.setOnTagClickListener(OnTagClickListener { parent, view, position ->
-            saveClub()
+            clubList[position].id?.let { saveClub(it) }
         })
+
+        graphic_type_btn.setOnClickListener {
+            if (nowPreviewGraphicType == 1) {
+                getRank()
+            } else {
+                setPreviewHitGraphic()
+            }
+        }
+
+        //排名字幕预览
+        rank_recyclerview.layoutManager = LinearLayoutManager(mContext)
+        rank_recyclerview.adapter = RankAdapter(mContext, rankList)
+
+        //撤销
+        undo_score_btn.setOnClickListener {
+            undo()
+        }
+
+        getHitGraphicData()
     }
 
-    private fun getShowData() {
+    fun show() {
+        visibility = View.VISIBLE
+    }
+
+    private fun setPreviewHitGraphic() {
+        nowPreviewGraphicType = 1
+        graphic_type_btn.text = mContext.getString(R.string.this_group_rank_graphic)
+        hit_graphic_cl.visibility = View.VISIBLE
+        rank_graphic_cl.visibility = View.GONE
+    }
+
+    private fun getHitGraphicData() {
         var playerID = ""
         if (selectedPlayerIndex != -1) {
-            playerID = playerList.get(selectedPlayerIndex).id.toString()
+            playerID = playerList[selectedPlayerIndex].id.toString()
         }
-        val queue = Volley.newRequestQueue(mContext)
         val url =
             data.API_BASE_URL + "getinitinfo.php?mt_id=${data.match}&gp_id=${data.gp_id}&pl_id=${playerID}"
         val stringRequest = StringRequest(
             Request.Method.GET, url,
             Response.Listener<String> { response ->
                 Log.e("zhaofei", response)
-                showData = Gson().fromJson(response, GraphicViewData::class.java)
-                if (showData == null) {
-                    Toast.makeText(mContext, "字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                hitGraphicData = Gson().fromJson(response, GraphicViewData::class.java)
+                if (hitGraphicData == null) {
+                    Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
                     visibility = View.INVISIBLE
                 } else {
-                    if (showData?.status == 200) {
+                    if (hitGraphicData?.status == 200) {
                         setPlayerFlowLayoutData()
                         showHitGraphicConstraintLayout()
+                        selectedClubID = -1
                         setClubFlowLayoutData()
                     } else {
-                        Toast.makeText(mContext, showData?.msg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
                         visibility = View.INVISIBLE
                     }
                 }
             },
             Response.ErrorListener {
-                Toast.makeText(mContext, "字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
                 visibility = View.INVISIBLE
                 it.printStackTrace()
             }
@@ -142,24 +178,19 @@ class GraphicView @JvmOverloads constructor(
         queue.add(stringRequest)
     }
 
-    fun show() {
-        visibility = View.VISIBLE
-        getShowData()
-    }
-
     private fun setPlayerFlowLayoutData() {
         playerList.clear()
         var player: Player
-        if (showData?.data?.list?.size ?: 0 <= 0) {
+        if (hitGraphicData?.data?.list?.size ?: 0 <= 0) {
             visibility = View.INVISIBLE
             Toast.makeText(mContext, "没有球员", Toast.LENGTH_SHORT).show()
             return
         }
-        for ((index, item) in showData?.data?.list?.withIndex()!!) {
+        for ((index, item) in hitGraphicData?.data?.list?.withIndex()!!) {
             player = Player()
             player.name = item.pl_cn_name
             player.id = item.pl_id.toString()
-            if (item.pl_id == showData?.data?.pl_id) {
+            if (item.pl_id == hitGraphicData?.data?.pl_id) {
                 player.isChecked = true
                 selectedPlayerIndex = index
             }
@@ -172,7 +203,7 @@ class GraphicView @JvmOverloads constructor(
     private fun setClubFlowLayoutData() {
         clubList.clear()
         var club: Club
-        val golfClubList = showData?.data?.golf_club_list
+        val golfClubList = hitGraphicData?.data?.golf_club_list
         if (golfClubList?.size ?: 0 <= 0) {
             return
         }
@@ -181,6 +212,7 @@ class GraphicView @JvmOverloads constructor(
             club = Club()
             club.id = value
             club.name = data.getClubTypeString(value)
+            club.isCheck = value == selectedClubID
             clubList.add(club)
         }
 
@@ -188,9 +220,8 @@ class GraphicView @JvmOverloads constructor(
     }
 
     private fun showHitGraphicConstraintLayout() {
-        val myData = showData?.data ?: return
-        hit_graphic_cl.visibility = View.VISIBLE
-        rank_graphic_cl.visibility = View.INVISIBLE
+        val myData = hitGraphicData?.data ?: return
+        setPreviewHitGraphic()
         player_name_tv.text = myData.pl_cn_name
         hole_number_tv.text = mContext.getString(R.string.current_hole, myData.mh_id)
         hole_par_tv.text = myData.mh_par_str
@@ -229,11 +260,156 @@ class GraphicView @JvmOverloads constructor(
     fun setHitBtnFlowLayoutData() {
     }
 
-    fun savePlace() {
-
+    private fun savePlace(placeID: Int) {
+        if (selectedPlayerIndex == -1) {
+            Toast.makeText(mContext, "请先选择球员", Toast.LENGTH_SHORT).show()
+        } else {
+            val playerID = playerList[selectedPlayerIndex].id
+            val holeID = hitGraphicData?.data?.mh_id
+            val hitNumber = hitGraphicData?.data?.sc_score
+            val lon: Double = 100.0
+            val lat: Double = 100.0
+            val url =
+                data.API_BASE_URL + "setplace.php?mt_id=${data.match}&pl_id=${playerID}&sc_place=${placeID}" +
+                        "&rd_id=${data.round}&ho_id=${holeID}&sc_score=${hitNumber}&lon=${lon}&lat=${lat}"
+            val stringRequest = StringRequest(
+                Request.Method.GET, url,
+                Response.Listener<String> { response ->
+                    Log.e("zhaofei", response)
+                    hitGraphicData = Gson().fromJson(response, GraphicViewData::class.java)
+                    if (hitGraphicData == null) {
+                        Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    } else {
+                        if (hitGraphicData?.status == 200) {
+                            setPlayerFlowLayoutData()
+                            showHitGraphicConstraintLayout()
+                            setClubFlowLayoutData()
+                        } else {
+                            Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                Response.ErrorListener {
+                    Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    it.printStackTrace()
+                }
+            )
+            queue.add(stringRequest)
+        }
     }
 
-    fun saveClub() {
+    private fun saveClub(clubID: Int) {
+        if (selectedPlayerIndex == -1) {
+            Toast.makeText(mContext, "请先选择球员", Toast.LENGTH_SHORT).show()
+        } else {
+            val playerID = playerList[selectedPlayerIndex].id
+            val holeID = hitGraphicData?.data?.mh_id
+            val hitNumber = hitGraphicData?.data?.sc_score
+            val url =
+                data.API_BASE_URL + "setgolfclub.php?mt_id=${data.match}&pl_id=${playerID}&sc_golf_club=${clubID}&rd_id=${data.round}" +
+                        "&ho_id=${holeID}&sc_score=${hitNumber}"
+            val stringRequest = StringRequest(
+                Request.Method.GET, url,
+                Response.Listener<String> { response ->
+                    Log.e("zhaofei", response)
+                    hitGraphicData = Gson().fromJson(response, GraphicViewData::class.java)
+                    if (hitGraphicData == null) {
+                        Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    } else {
+                        if (hitGraphicData?.status == 200) {
+                            setPlayerFlowLayoutData()
+                            showHitGraphicConstraintLayout()
+                            selectedClubID = clubID
+                            setClubFlowLayoutData()
+                        } else {
+                            Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                Response.ErrorListener {
+                    Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    it.printStackTrace()
+                }
+            )
+            queue.add(stringRequest)
+        }
+    }
 
+    private fun getRank() {
+        val url =
+            data.API_BASE_URL + "getrank.php?mt_id=${data.match}&gp_id=${data.gp_id}"
+        val stringRequest = StringRequest(
+            Request.Method.GET, url,
+            Response.Listener<String> { response ->
+                Log.e("zhaofei", response)
+                val rankReponse = Gson().fromJson(response, RankReponse::class.java)
+                if (rankReponse == null) {
+                    Toast.makeText(mContext, "排名字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                } else {
+                    if (rankReponse.status == 200) {
+                        if (rankReponse.data != null && rankReponse.data?.list?.size ?: 0 <= 0) {
+                            Toast.makeText(mContext, "当前没有排名", Toast.LENGTH_SHORT).show()
+                        } else {
+                            rankReponse.data?.list?.let { showRankGraphicConstraintLayout(it) }
+                        }
+                    } else {
+                        Toast.makeText(mContext, rankReponse.msg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            Response.ErrorListener {
+                Toast.makeText(mContext, "排名字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                visibility = View.INVISIBLE
+                it.printStackTrace()
+            }
+        )
+        queue.add(stringRequest)
+    }
+
+    private fun showRankGraphicConstraintLayout(list: MutableList<RankReponse.MyData.RankInfo>) {
+        nowPreviewGraphicType = 2
+        graphic_type_btn.text = mContext.getString(R.string.to_player_graphic)
+
+        hit_graphic_cl.visibility = View.GONE
+        rank_graphic_cl.visibility = View.VISIBLE
+        rankList.clear()
+        rankList.addAll(list)
+        rank_recyclerview.adapter?.notifyDataSetChanged()
+    }
+
+    private fun undo() {
+        if (selectedPlayerIndex == -1) {
+            Toast.makeText(mContext, "请先选择球员", Toast.LENGTH_SHORT).show()
+        } else {
+            val playerID = playerList[selectedPlayerIndex].id
+            val holeID = hitGraphicData?.data?.mh_id
+            val hitNumber = hitGraphicData?.data?.sc_score
+            val url =
+                data.API_BASE_URL + "undo.php?mt_id=${data.match}&pl_id=${playerID}" + "&rd_id=${data.round}&ho_id=${holeID}&sc_score=${hitNumber}"
+            Log.e("zhaofei", url)
+            val stringRequest = StringRequest(
+                Request.Method.GET, url,
+                Response.Listener<String> { response ->
+                    Log.e("zhaofei", response)
+                    hitGraphicData = Gson().fromJson(response, GraphicViewData::class.java)
+                    if (hitGraphicData == null) {
+                        Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    } else {
+                        if (hitGraphicData?.status == 200) {
+                            setPlayerFlowLayoutData()
+                            showHitGraphicConstraintLayout()
+                            setClubFlowLayoutData()
+                        } else {
+                            Toast.makeText(mContext, hitGraphicData?.msg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                Response.ErrorListener {
+                    Toast.makeText(mContext, "击球字幕数据获取失败", Toast.LENGTH_SHORT).show()
+                    it.printStackTrace()
+                }
+            )
+            queue.add(stringRequest)
+        }
     }
 }

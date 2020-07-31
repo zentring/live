@@ -38,7 +38,7 @@ android {
 
     defaultConfig {
         applicationId "net.zentring.live"
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion 30
         versionCode getMyVersionCode()
         versionName getMyVersionName()
